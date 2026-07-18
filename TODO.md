@@ -13,7 +13,7 @@ Lowest-risk, highest immediate value, and already fully exercised by both planne
 - [x] `logging` — structured JSON setup ([docs/architecture.md](docs/architecture.md#package-layout))
 - [x] `health` — check primitives only, no routes ([docs/health.md](docs/health.md))
 - [x] `proxy` — `X-Forwarded-*` parsing/validation ([docs/modules.md](docs/modules.md#proxy))
-- [ ] `version` — installed package/service version reporting ([docs/architecture.md](docs/architecture.md#package-layout))
+- [x] `version` — installed package/service version reporting ([docs/architecture.md](docs/architecture.md#package-layout))
 
 ### v0.2 — Query, security, types
 Unblocks pagination/filtering work in `greentechhub-fastapi` and eventually Django.
