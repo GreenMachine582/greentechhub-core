@@ -27,7 +27,7 @@ Unblocks pagination/filtering work in `greentechhub-fastapi` and eventually Djan
 - [x] `permissions` — catalogue + `has_permission` primitives ([docs/permissions.md](docs/permissions.md))
 
 ### v0.4 — Events, feature flags
-- [ ] `events` — `publish`/`subscribe`, log-backed ([docs/events.md](docs/events.md))
+- [x] `events` — `publish`/`subscribe`, log-backed ([docs/events.md](docs/events.md))
 - [ ] `feature_flags` — env/file-backed `FeatureFlagProvider` ([docs/modules.md](docs/modules.md#feature-flags))
 
 ### v0.5 — Authentik-backed identity
