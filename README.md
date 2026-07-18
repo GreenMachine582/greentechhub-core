@@ -1,7 +1,8 @@
 # 🧱 greentechhub-core
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?logo=opensourceinitiative&logoColor=white)](LICENSE)
-[![Status: Planning](https://img.shields.io/badge/Status-Planning-yellow.svg)](TODO.md)
+[![Tests](https://github.com/GreenMachine582/greentechhub-core/actions/workflows/ci.yml/badge.svg)](https://github.com/GreenMachine582/greentechhub-core/actions/workflows/ci.yml)
+[![Status: Hold](https://img.shields.io/badge/Status-Hold-orange.svg)](TODO.md)
 [![Python](https://img.shields.io/badge/Python-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Pydantic](https://img.shields.io/badge/Pydantic-E92063.svg?logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
 [![pytest](https://img.shields.io/badge/pytest-0A9EDC.svg?logo=pytest&logoColor=white)](https://docs.pytest.org/)
@@ -44,7 +45,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 
 ## 🗺️ Status & Roadmap
 
-This package is in the **planning phase** — no code has shipped yet. The phased rollout (v0.1 → v1.0) and per-service migration tracking are a living checklist in [TODO.md](TODO.md).
+**On hold.** v0.1–v0.4 have shipped — `config`/`logging`/`health`/`proxy`/`version`, `query`/`security`/`types`, `identity`/`permissions`, and `events`/`feature_flags` are all implemented and tested. Further work is paused pending two external prerequisites: a real Authentik instance to build and test v0.5's `AuthentikIdentityProvider` against, and the `greentechhub-fastapi`/`greentechhub-django` adapter packages existing and consuming this library (needed for v0.6 validation and the v1.0 bar). The phased rollout (v0.1 → v1.0) and per-service migration tracking remain a living checklist in [TODO.md](TODO.md).
 
 ## 📄 Licence
 
