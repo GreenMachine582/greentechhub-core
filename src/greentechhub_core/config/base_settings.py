@@ -1,9 +1,5 @@
 """GTHBaseSettings — the pydantic-settings base class every GreenTechHub-ecosystem
 service's own Settings extends.
-
-See docs/architecture.md for package layout, and the greentechhub-django and
-greentechhub-fastapi ``docs/settings.md`` / ``docs/registration.md`` for how each
-adapter's Settings extends this class.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
