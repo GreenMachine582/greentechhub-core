@@ -23,7 +23,7 @@ Unblocks pagination/filtering work in `greentechhub-fastapi` and eventually Djan
 - [x] `types` — `FlashMessage`, `Result`, etc. ([docs/architecture.md](docs/architecture.md#package-layout))
 
 ### v0.3 — Identity, permissions
-- [ ] `identity` — `DevelopmentIdentityProvider` first ([docs/identity.md](docs/identity.md))
+- [x] `identity` — `DevelopmentIdentityProvider` first ([docs/identity.md](docs/identity.md))
 - [ ] `permissions` — catalogue + `has_permission` primitives ([docs/permissions.md](docs/permissions.md))
 
 ### v0.4 — Events, feature flags
