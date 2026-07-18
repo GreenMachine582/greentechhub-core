@@ -9,7 +9,7 @@
 ### v0.1 — Config, logging, health, proxy, version
 Lowest-risk, highest immediate value, and already fully exercised by both planned adapter packages.
 
-- [ ] `config` — `GTHBaseSettings` ([docs/architecture.md](docs/architecture.md#package-layout))
+- [x] `config` — `GTHBaseSettings` ([docs/architecture.md](docs/architecture.md#package-layout))
 - [ ] `logging` — structured JSON setup ([docs/architecture.md](docs/architecture.md#package-layout))
 - [ ] `health` — check primitives only, no routes ([docs/health.md](docs/health.md))
 - [ ] `proxy` — `X-Forwarded-*` parsing/validation ([docs/modules.md](docs/modules.md#proxy))
