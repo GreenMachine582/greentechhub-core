@@ -20,7 +20,7 @@ Unblocks pagination/filtering work in `greentechhub-fastapi` and eventually Djan
 
 - [x] `query` — `Filter`, `Operator`, `Sort`, `Page`, `PageRequest` ([docs/query.md](docs/query.md))
 - [x] `security` — passwords, tokens, redact ([docs/modules.md](docs/modules.md#security))
-- [ ] `types` — `FlashMessage`, `Result`, etc. ([docs/architecture.md](docs/architecture.md#package-layout))
+- [x] `types` — `FlashMessage`, `Result`, etc. ([docs/architecture.md](docs/architecture.md#package-layout))
 
 ### v0.3 — Identity, permissions
 - [ ] `identity` — `DevelopmentIdentityProvider` first ([docs/identity.md](docs/identity.md))
