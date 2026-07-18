@@ -11,7 +11,7 @@ Lowest-risk, highest immediate value, and already fully exercised by both planne
 
 - [x] `config` — `GTHBaseSettings` ([docs/architecture.md](docs/architecture.md#package-layout))
 - [x] `logging` — structured JSON setup ([docs/architecture.md](docs/architecture.md#package-layout))
-- [ ] `health` — check primitives only, no routes ([docs/health.md](docs/health.md))
+- [x] `health` — check primitives only, no routes ([docs/health.md](docs/health.md))
 - [ ] `proxy` — `X-Forwarded-*` parsing/validation ([docs/modules.md](docs/modules.md#proxy))
 - [ ] `version` — installed package/service version reporting ([docs/architecture.md](docs/architecture.md#package-layout))
 
