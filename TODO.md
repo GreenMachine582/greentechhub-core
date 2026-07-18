@@ -18,7 +18,7 @@ Lowest-risk, highest immediate value, and already fully exercised by both planne
 ### v0.2 — Query, security, types
 Unblocks pagination/filtering work in `greentechhub-fastapi` and eventually Django.
 
-- [ ] `query` — `Filter`, `Operator`, `Sort`, `Page`, `PageRequest` ([docs/query.md](docs/query.md))
+- [x] `query` — `Filter`, `Operator`, `Sort`, `Page`, `PageRequest` ([docs/query.md](docs/query.md))
 - [ ] `security` — passwords, tokens, redact ([docs/modules.md](docs/modules.md#security))
 - [ ] `types` — `FlashMessage`, `Result`, etc. ([docs/architecture.md](docs/architecture.md#package-layout))
 
