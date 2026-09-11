@@ -32,6 +32,14 @@ Unblocks pagination/filtering work in `greentechhub-fastapi` and eventually Djan
 - [x] `events` — `publish`/`subscribe`, log-backed ([docs/events.md](docs/events.md))
 - [x] `feature_flags` — env/file-backed `FeatureFlagProvider` ([docs/modules.md](docs/modules.md#feature-flags))
 
+### v0.4.1 — Contract test base classes
+Unblocks adapter packages, which had no reusable base classes to test their own `IdentityProvider`/`FeatureFlagProvider`/health/query implementations against.
+
+- [x] `contracts.identity` — `IdentityProviderContract` ([docs/testing.md](docs/testing.md))
+- [x] `contracts.feature_flags` — `FeatureFlagProviderContract` ([docs/testing.md](docs/testing.md))
+- [x] `contracts.health` — `HealthCheckContract` ([docs/testing.md](docs/testing.md))
+- [x] `contracts.query` — `PageContract` ([docs/testing.md](docs/testing.md))
+
 ### v0.5 — Authentik-backed identity
 - [ ] `identity`'s `AuthentikIdentityProvider`, once an Authentik instance actually exists to test against ([docs/identity.md](docs/identity.md))
 
