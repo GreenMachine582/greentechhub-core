@@ -64,3 +64,23 @@ def test_includes_exception_when_exc_info_true():
 def test_omits_exception_field_when_no_exc_info():
     payload = json.loads(JSONFormatter().format(_make_record()))
     assert "exception" not in payload
+
+
+def test_omits_service_and_version_when_unset():
+    payload = json.loads(JSONFormatter().format(_make_record()))
+    assert "service" not in payload
+    assert "version" not in payload
+
+
+def test_includes_service_and_version_when_set():
+    formatter = JSONFormatter(service="pyfinbot", version="1.2.3")
+    payload = json.loads(formatter.format(_make_record()))
+    assert payload["service"] == "pyfinbot"
+    assert payload["version"] == "1.2.3"
+
+
+def test_service_and_version_are_independent():
+    formatter = JSONFormatter(service="pyfinbot")
+    payload = json.loads(formatter.format(_make_record()))
+    assert payload["service"] == "pyfinbot"
+    assert "version" not in payload

@@ -53,3 +53,23 @@ def test_configure_logging_is_idempotent(capsys):
 
     lines = capsys.readouterr().out.strip().splitlines()
     assert len(lines) == 1
+
+
+def test_service_and_version_are_included_when_supplied(capsys):
+    configure_logging("INFO", service="pyfinbot", version="1.2.3")
+    logging.getLogger("gth.test.service").info("hello")
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    payload = json.loads(lines[0])
+    assert payload["service"] == "pyfinbot"
+    assert payload["version"] == "1.2.3"
+
+
+def test_service_and_version_are_omitted_when_not_supplied(capsys):
+    configure_logging("INFO")
+    logging.getLogger("gth.test.no_service").info("hello")
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    payload = json.loads(lines[0])
+    assert "service" not in payload
+    assert "version" not in payload

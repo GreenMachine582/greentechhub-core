@@ -20,6 +20,13 @@ class JSONFormatter(logging.Formatter):
         logger: the logger name (``record.name``).
         message: the rendered log message (``record.getMessage()``, i.e. after
             ``%``-style argument substitution).
+        service, version: this process's own identity — the same
+            ``service.name``/``service.version`` pair
+            ``observability.resource.get_resource_attributes`` produces for OTel,
+            included only when the formatter was constructed with them (see
+            ``configure_logging``'s own ``service``/``version`` parameters) —
+            omitted entirely, not emitted as ``null``, for a service that hasn't
+            opted in, same precedent as ``request_id`` below.
         request_id: the current request ID from ``context.get_request_id()``, included
             only when set — omitted entirely (rather than emitted as ``null``) so Loki
             queries filtering on the field's presence aren't polluted by requestless
@@ -29,6 +36,11 @@ class JSONFormatter(logging.Formatter):
             exc_info=True)`` or ``logger.exception(...)``.
     """
 
+    def __init__(self, *, service: str | None = None, version: str | None = None) -> None:
+        super().__init__()
+        self._service = service
+        self._version = version
+
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, str] = {
             "timestamp": _isoformat_utc(record.created),
@@ -36,6 +48,11 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
+
+        if self._service is not None:
+            payload["service"] = self._service
+        if self._version is not None:
+            payload["version"] = self._version
 
         request_id = get_request_id()
         if request_id is not None:

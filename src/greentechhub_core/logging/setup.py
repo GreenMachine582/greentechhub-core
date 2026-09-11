@@ -14,13 +14,23 @@ from greentechhub_core.logging.formatter import JSONFormatter
 _HANDLER_NAME = "greentechhub_core.json_stdout"
 
 
-def configure_logging(log_level: str = "INFO") -> None:
+def configure_logging(
+    log_level: str = "INFO", *, service: str | None = None, version: str | None = None
+) -> None:
     """Configure the root logger to emit one JSON object per line to stdout.
 
     Takes a plain ``log_level`` string rather than a ``GTHBaseSettings`` instance so
     this module stays usable standalone — a CLI, a script, or a test can call
     ``configure_logging("DEBUG")`` directly without importing ``greentechhub_core.config``.
     Adapters pass ``settings.log_level``.
+
+    ``service``/``version`` are passed straight through to ``JSONFormatter`` — see its
+    own docstring for the fields they add. Optional and independent of each other
+    (a service can set one without the other); a caller that already computed
+    ``observability.resource.get_resource_attributes(...)`` for OTel can reuse its
+    ``service.name``/``service.version`` values here too, though the two aren't wired
+    together automatically — JSONFormatter's fields are flat (``service``/``version``),
+    not OTel's dotted attribute names, since this pipeline has nothing to do with OTel.
 
     Safe to call more than once (service startup calling it twice, or once per test):
     it removes only the handler it previously attached (identified by name) before
@@ -35,7 +45,7 @@ def configure_logging(log_level: str = "INFO") -> None:
 
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.name = _HANDLER_NAME
-    handler.setFormatter(JSONFormatter())
+    handler.setFormatter(JSONFormatter(service=service, version=version))
 
     root.addHandler(handler)
     root.setLevel(log_level.upper())

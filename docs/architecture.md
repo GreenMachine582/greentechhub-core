@@ -48,16 +48,17 @@ greentechhub-core/
 │   │   └── provider.py            # FeatureFlagProvider protocol + env/file-backed impl
 │   ├── health/
 │   │   ├── checks/
-│   │   │   ├── database.py        # planned — lands with first consumer needing it
-│   │   │   ├── redis.py           # planned — lands with first consumer needing it
+│   │   │   ├── database.py        # check_database — duck-typed on a SQLAlchemy-like engine, or a plain ping callable
+│   │   │   ├── redis.py           # planned — lands when Redis is deployed for some other reason
 │   │   │   ├── disk.py
-│   │   │   └── external.py        # planned — lands with first consumer needing it
+│   │   │   └── external.py        # check_external — duck-typed on an injected client (e.g. httpx.AsyncClient)
 │   │   └── result.py              # HealthResult
 │   ├── query/
 │   │   ├── types.py                # Filter, Operator, Sort, Page, PageRequest
 │   │   └── envelope.py            # shared paginated-response shape
 │   ├── observability/
-│   │   └── otel.py                # planned (v0.6)
+│   │   ├── resource.py            # get_resource_attributes — service.name/service.version, no OTel import
+│   │   └── otel.py                # planned (v0.6) — TracerProvider/MeterProvider/exporter setup, once a collector exists
 │   ├── security/
 │   │   ├── passwords.py
 │   │   ├── tokens.py

@@ -35,3 +35,15 @@ def test_exception_in_a_check_becomes_unhealthy_result_not_a_crash():
 def test_one_broken_check_does_not_prevent_others_from_being_collected():
     results = asyncio.run(run_checks([_ok(), _boom(), _ok()]))
     assert [r.status for r in results] == ["healthy", "unhealthy", "healthy"]
+
+
+def test_detail_falls_back_to_exception_type_name_when_str_is_empty():
+    class _EmptyStrError(Exception):
+        def __str__(self) -> str:
+            return ""
+
+    async def _check():
+        raise _EmptyStrError()
+
+    results = asyncio.run(run_checks([_check]))
+    assert results[0].detail == "_EmptyStrError"

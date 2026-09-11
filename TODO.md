@@ -13,7 +13,7 @@ Lowest-risk, highest immediate value, and already fully exercised by both planne
 
 - [x] `config` — `GTHBaseSettings` ([docs/architecture.md](docs/architecture.md#package-layout))
 - [x] `logging` — structured JSON setup ([docs/architecture.md](docs/architecture.md#package-layout))
-- [x] `health` — check primitives only, no routes ([docs/health.md](docs/health.md))
+- [x] `health` — check primitives only, no routes ([docs/health.md](docs/health.md)). `check_database`/`check_external` were silently dropped from the original v0.1 shipment (only `check_disk` landed) — added now, duck-typed with no SQLAlchemy/`httpx` dependency in core. `check_redis` still deferred until Redis is deployed for some other reason.
 - [x] `proxy` — `X-Forwarded-*` parsing/validation ([docs/modules.md](docs/modules.md#proxy))
 - [x] `version` — installed package/service version reporting ([docs/architecture.md](docs/architecture.md#package-layout))
 
@@ -50,7 +50,7 @@ Unblocks adapter packages, which had no reusable base classes to test their own 
 
 ### v0.6 — Background, observability
 - [x] `background.locks` — `Lock` protocol + `FileLock` (OS-advisory-lock-backed, single-host) ([docs/modules.md](docs/modules.md#background-tasks)). `scheduler`/`tasks` deferred until a consumer needs ≥2 scheduled jobs — zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for years; wrapping either version now risks a rewrite before there's a consumer to validate against.
-- [ ] `observability` — once there's an OTel collector to send to ([docs/modules.md](docs/modules.md#observability))
+- [ ] `observability` — the full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to ([docs/modules.md](docs/modules.md#observability)). `observability.resource`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) has shipped ahead of the rest — the Loki/Alloy JSON logging pipeline wants the same fields today (`logging.setup.configure_logging`'s new `service`/`version` parameters), independent of OTel existing at all.
 
 ### v1.0 — Validated in production
 - [ ] Both adapter packages consuming this package

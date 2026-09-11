@@ -35,4 +35,9 @@ async def _run_one(check: Check) -> HealthResult:
         return await check()
     except Exception as exc:
         latency_ms = (time.perf_counter() - start) * 1000
-        return HealthResult(status="unhealthy", detail=str(exc), latency_ms=latency_ms)
+        # Some real exceptions stringify to "" (e.g. httpx.ConnectTimeout,
+        # verified directly against a real client while building
+        # check_external) — fall back to the exception's type name so an
+        # unhealthy result is never left with no detail at all.
+        detail = str(exc) or type(exc).__name__
+        return HealthResult(status="unhealthy", detail=detail, latency_ms=latency_ms)

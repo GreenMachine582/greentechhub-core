@@ -10,7 +10,9 @@ Same evolve-the-adapter shape as [identity](identity.md) — starts as env/stati
 
 ## Observability
 
-Sets up the OpenTelemetry `TracerProvider`/`MeterProvider` and exporter config; framework auto-instrumentation libraries (e.g. `opentelemetry-instrumentation-fastapi`) are adapter-layer — they explicitly import `fastapi`/`django`.
+The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until there's an OTel collector to actually send to; framework auto-instrumentation libraries (e.g. `opentelemetry-instrumentation-fastapi`) are adapter-layer — they explicitly import `fastapi`/`django`.
+
+`observability/resource.py` ships ahead of the rest: `get_resource_attributes(service_name=..., service_version=None)` returns the `service.name`/`service.version` pair (OTel's own semantic-convention names, reused independent of OTel — no OTel import here) via `version.get_version_info`. Worth having now because the Loki/Alloy JSON logging pipeline that already exists wants the same two fields — see `logging.setup.configure_logging`'s own `service`/`version` parameters (flat field names, not OTel's dotted ones — the two aren't wired together automatically, since logging has nothing to do with OTel).
 
 ## Security
 
