@@ -36,7 +36,7 @@ greentechhub-core/
 │   │   └── setup.py
 │   ├── identity/
 │   │   ├── models.py              # Identity, User, Claims, Scope, Group
-│   │   └── provider.py            # IdentityProvider protocol + DevelopmentIdentityProvider, AuthentikIdentityProvider
+│   │   └── provider.py            # IdentityProvider protocol + DevelopmentIdentityProvider; AuthentikIdentityProvider planned (v0.5)
 │   ├── permissions/
 │   │   ├── catalogue.py           # typed permission-string helpers (e.g. "portfolio.view")
 │   │   └── check.py               # has_permission(identity, "portfolio.view")
@@ -48,16 +48,16 @@ greentechhub-core/
 │   │   └── provider.py            # FeatureFlagProvider protocol + env/file-backed impl
 │   ├── health/
 │   │   ├── checks/
-│   │   │   ├── database.py
-│   │   │   ├── redis.py
+│   │   │   ├── database.py        # planned — lands with first consumer needing it
+│   │   │   ├── redis.py           # planned — lands with first consumer needing it
 │   │   │   ├── disk.py
-│   │   │   └── external.py
+│   │   │   └── external.py        # planned — lands with first consumer needing it
 │   │   └── result.py              # HealthResult
 │   ├── query/
 │   │   ├── types.py                # Filter, Operator, Sort, Page, PageRequest
 │   │   └── envelope.py            # shared paginated-response shape
 │   ├── observability/
-│   │   └── otel.py
+│   │   └── otel.py                # planned (v0.6)
 │   ├── security/
 │   │   ├── passwords.py
 │   │   ├── tokens.py
@@ -66,9 +66,9 @@ greentechhub-core/
 │   │   └── trusted_proxy.py
 │   ├── version.py
 │   ├── background/
-│   │   ├── scheduler.py
-│   │   ├── tasks.py
-│   │   └── locks.py
+│   │   ├── scheduler.py           # planned (v0.6)
+│   │   ├── tasks.py               # planned (v0.6)
+│   │   └── locks.py               # planned (v0.6)
 │   └── types/
 │       └── common.py              # FlashMessage, Result, etc.
 ├── tests/

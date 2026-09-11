@@ -21,7 +21,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `permissions` | Permission-check primitives and typed permission-catalogue helpers                                                         | [docs/permissions.md](docs/permissions.md) |
 | `events` | `publish()`/`subscribe()` + typed event definitions — logs events today, Redis pub/sub later                               | [docs/events.md](docs/events.md) |
 | `feature_flags` | A `FeatureFlagProvider` interface; env/static-file-backed implementation to start                                          | [docs/modules.md](docs/modules.md#feature-flags) |
-| `health` | Check primitives (`checks/database.py`, `checks/redis.py`, `checks/disk.py`, `checks/external.py`) + a `HealthResult` type | [docs/health.md](docs/health.md) |
+| `health` | Check primitives + a `HealthResult` type — `check_disk` ships today; `database`/`redis`/`external` land with the first consumer that has that dependency | [docs/health.md](docs/health.md) |
 | `query` | Framework-independent `Filter`, `Operator`, `Sort`, `Page`, `PageRequest` types and the response envelope shape            | [docs/query.md](docs/query.md) |
 | `observability` | OpenTelemetry `TracerProvider`/`MeterProvider` setup and exporter config                                                   | [docs/modules.md](docs/modules.md#observability) |
 | `security` | Password hashing, constant-time comparisons, secret redaction for logs, CSRF token generation                              | [docs/modules.md](docs/modules.md#security) |
