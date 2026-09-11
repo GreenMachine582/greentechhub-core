@@ -66,9 +66,9 @@ greentechhub-core/
 │   │   └── trusted_proxy.py
 │   ├── version.py
 │   ├── background/
-│   │   ├── scheduler.py           # planned (v0.6)
-│   │   ├── tasks.py               # planned (v0.6)
-│   │   └── locks.py               # planned (v0.6)
+│   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
+│   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
+│   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
 │   └── types/
 │       └── common.py              # FlashMessage, Result, etc.
 ├── tests/

@@ -22,7 +22,9 @@ Pure `X-Forwarded-*` parsing/validation against a trusted-proxy allowlist, frame
 
 ## Background tasks
 
-`background/scheduler.py`/`tasks.py`/`locks.py` wraps APScheduler with GreenTechHub conventions (structured logging per job run, a lock primitive to prevent overlapping runs across replicas). Framework-independent — a scheduler doesn't need FastAPI or Django running to tick.
+`background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
+
+`background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
 
 ## CLI (not v1, worth leaving room for)
 

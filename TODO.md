@@ -49,7 +49,7 @@ Unblocks adapter packages, which had no reusable base classes to test their own 
 - [ ] Validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's JWKS
 
 ### v0.6 — Background, observability
-- [ ] `background` — scheduler/task/lock primitives ([docs/modules.md](docs/modules.md#background-tasks))
+- [x] `background.locks` — `Lock` protocol + `FileLock` (OS-advisory-lock-backed, single-host) ([docs/modules.md](docs/modules.md#background-tasks)). `scheduler`/`tasks` deferred until a consumer needs ≥2 scheduled jobs — zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for years; wrapping either version now risks a rewrite before there's a consumer to validate against.
 - [ ] `observability` — once there's an OTel collector to send to ([docs/modules.md](docs/modules.md#observability))
 
 ### v1.0 — Validated in production

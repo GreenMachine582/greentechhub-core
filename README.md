@@ -27,7 +27,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `security` | Password hashing, constant-time comparisons, secret redaction for logs, CSRF token generation                              | [docs/modules.md](docs/modules.md#security) |
 | `proxy` | Pure functions parsing/validating `X-Forwarded-*` headers against a trusted-IP allowlist                                   | [docs/modules.md](docs/modules.md#proxy) |
 | `version` | Reports installed `greentechhub-*` package versions + service version, for `/health`/`/version` and deploy debugging       | [docs/architecture.md](docs/architecture.md#package-layout) |
-| `background` | Thin scheduler/task/lock primitives (`scheduler.py`, `tasks.py`, `locks.py`) — APScheduler-based, sequenced for v0.6       | [docs/modules.md](docs/modules.md#background-tasks) |
+| `background` | `locks.py` — `Lock`/`FileLock`, OS-advisory-lock-backed, ships today; `scheduler.py`/`tasks.py` deferred until a consumer needs ≥2 scheduled jobs | [docs/modules.md](docs/modules.md#background-tasks) |
 | `types` / `utils` | Shared value types (`FlashMessage`, `Result`/error types) and small utilities with no other natural home                   | [docs/architecture.md](docs/architecture.md) |
 | `contracts` | Reusable `pytest` base classes (`IdentityProviderContract`, `FeatureFlagProviderContract`, `HealthCheckContract`, `PageContract`) adapters subclass against their own implementations — the `contracts` extra | [docs/testing.md](docs/testing.md) |
 
