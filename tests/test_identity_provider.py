@@ -1,9 +1,25 @@
 import asyncio
 from datetime import timedelta
 
-from greentechhub_core.identity import DevelopmentIdentityProvider, Identity, RawAuthContext
+from greentechhub_core.identity import (
+    AuthentikIdentityProvider,
+    DevelopmentIdentityProvider,
+    Identity,
+    RawAuthContext,
+)
 
 _SECRET = "test-secret-key"
+
+# Realistic Authentik forward-auth headers, per Authentik's own documented
+# proxy/forward-auth outpost header set.
+_AUTHENTIK_HEADERS = {
+    "X-authentik-username": "jdoe",
+    "X-authentik-groups": "admins|users",
+    "X-authentik-email": "jdoe@example.com",
+    "X-authentik-uid": "9f0e2372-driver-uid",
+    "X-authentik-name": "Jane Doe",
+    "X-authentik-jwt": "eyJhbGciOiJIUzI1NiJ9.fake.signature",
+}
 
 
 def _provider(secret: str = _SECRET) -> DevelopmentIdentityProvider:
@@ -111,3 +127,79 @@ def test_wrong_secret_resolves_to_none():
 
 def test_malformed_token_string_resolves_to_none():
     assert _provider().resolve_sync(RawAuthContext(token="not-a-jwt-at-all")) is None
+
+
+# Authentik forward-auth
+
+
+def test_authentik_maps_headers_to_identity():
+    identity = AuthentikIdentityProvider().resolve_sync(RawAuthContext(headers=_AUTHENTIK_HEADERS))
+    assert identity is not None
+    assert identity.subject == "9f0e2372-driver-uid"
+    assert identity.username == "jdoe"
+    assert identity.email == "jdoe@example.com"
+    assert identity.groups == ["admins", "users"]
+
+
+def test_authentik_claims_capture_every_prefixed_header():
+    identity = AuthentikIdentityProvider().resolve_sync(RawAuthContext(headers=_AUTHENTIK_HEADERS))
+    assert identity.claims == {
+        "username": "jdoe",
+        "groups": "admins|users",
+        "email": "jdoe@example.com",
+        "uid": "9f0e2372-driver-uid",
+        "name": "Jane Doe",
+        "jwt": "eyJhbGciOiJIUzI1NiJ9.fake.signature",
+    }
+
+
+def test_authentik_subject_falls_back_to_username_when_uid_absent():
+    headers = {k: v for k, v in _AUTHENTIK_HEADERS.items() if k != "X-authentik-uid"}
+    identity = AuthentikIdentityProvider().resolve_sync(RawAuthContext(headers=headers))
+    assert identity.subject == "jdoe"
+
+
+def test_authentik_missing_username_resolves_to_none():
+    headers = {k: v for k, v in _AUTHENTIK_HEADERS.items() if k != "X-authentik-username"}
+    assert AuthentikIdentityProvider().resolve_sync(RawAuthContext(headers=headers)) is None
+
+
+def test_authentik_empty_headers_resolves_to_none_without_raising():
+    assert AuthentikIdentityProvider().resolve_sync(RawAuthContext()) is None
+
+
+def test_authentik_missing_groups_header_defaults_to_empty_list():
+    headers = {k: v for k, v in _AUTHENTIK_HEADERS.items() if k != "X-authentik-groups"}
+    identity = AuthentikIdentityProvider().resolve_sync(RawAuthContext(headers=headers))
+    assert identity.groups == []
+
+
+def test_authentik_header_lookup_is_case_insensitive():
+    headers = {k.lower(): v for k, v in _AUTHENTIK_HEADERS.items()}
+    identity = AuthentikIdentityProvider().resolve_sync(RawAuthContext(headers=headers))
+    assert identity is not None
+    assert identity.username == "jdoe"
+
+
+def test_authentik_custom_header_prefix_and_groups_separator():
+    provider = AuthentikIdentityProvider(header_prefix="X-Custom-", groups_separator=",")
+    headers = {
+        "X-Custom-username": "bob",
+        "X-Custom-groups": "team-a,team-b",
+    }
+    identity = provider.resolve_sync(RawAuthContext(headers=headers))
+    assert identity is not None
+    assert identity.username == "bob"
+    assert identity.groups == ["team-a", "team-b"]
+
+
+def test_authentik_require_headers_beyond_username():
+    provider = AuthentikIdentityProvider(require_headers=("username", "email"))
+    headers = {"X-authentik-username": "jdoe"}
+    assert provider.resolve_sync(RawAuthContext(headers=headers)) is None
+
+
+def test_authentik_resolve_and_resolve_sync_agree():
+    provider = AuthentikIdentityProvider()
+    raw = RawAuthContext(headers=_AUTHENTIK_HEADERS)
+    assert asyncio.run(provider.resolve(raw)) == provider.resolve_sync(raw)

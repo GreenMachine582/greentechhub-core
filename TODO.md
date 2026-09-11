@@ -41,7 +41,12 @@ Unblocks adapter packages, which had no reusable base classes to test their own 
 - [x] `contracts.query` — `PageContract` ([docs/testing.md](docs/testing.md))
 
 ### v0.5 — Authentik-backed identity
-- [ ] `identity`'s `AuthentikIdentityProvider`, once an Authentik instance actually exists to test against ([docs/identity.md](docs/identity.md))
+- [x] `identity`'s `AuthentikIdentityProvider` — forward-auth header path only ([docs/identity.md](docs/identity.md)). Doesn't need a live instance: Authentik's forward-auth header set is stable and documented, and this class is "header-dict-in, Identity-out" like `proxy.trusted_proxy`. OIDC token validation needs the issuer's JWKS and is deferred — see v0.5.1.
+
+### v0.5.1 — AuthentikIdentityProvider OIDC token path
+`# planned` — gated on a real Authentik instance to fetch/validate against its JWKS, unlike the header path above.
+
+- [ ] Validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's JWKS
 
 ### v0.6 — Background, observability
 - [ ] `background` — scheduler/task/lock primitives ([docs/modules.md](docs/modules.md#background-tasks))

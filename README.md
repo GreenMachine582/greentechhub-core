@@ -29,6 +29,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `version` | Reports installed `greentechhub-*` package versions + service version, for `/health`/`/version` and deploy debugging       | [docs/architecture.md](docs/architecture.md#package-layout) |
 | `background` | Thin scheduler/task/lock primitives (`scheduler.py`, `tasks.py`, `locks.py`) — APScheduler-based, sequenced for v0.6       | [docs/modules.md](docs/modules.md#background-tasks) |
 | `types` / `utils` | Shared value types (`FlashMessage`, `Result`/error types) and small utilities with no other natural home                   | [docs/architecture.md](docs/architecture.md) |
+| `contracts` | Reusable `pytest` base classes (`IdentityProviderContract`, `FeatureFlagProviderContract`, `HealthCheckContract`, `PageContract`) adapters subclass against their own implementations — the `contracts` extra | [docs/testing.md](docs/testing.md) |
 
 ## 📚 Docs
 
@@ -45,7 +46,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 
 ## 🗺️ Status & Roadmap
 
-**On hold.** v0.1–v0.4 have shipped — `config`/`logging`/`health`/`proxy`/`version`, `query`/`security`/`types`, `identity`/`permissions`, and `events`/`feature_flags` are all implemented and tested. Further work is paused pending two external prerequisites: a real Authentik instance to build and test v0.5's `AuthentikIdentityProvider` against, and the `greentechhub-fastapi`/`greentechhub-django` adapter packages existing and consuming this library (needed for v0.6 validation and the v1.0 bar). The phased rollout (v0.1 → v1.0) and per-service migration tracking remain a living checklist in [TODO.md](TODO.md).
+**On hold.** v0.1–v0.5 have shipped — `config`/`logging`/`health`/`proxy`/`version`, `query`/`security`/`types`, `identity`/`permissions`, `events`/`feature_flags`, and `contracts` are all implemented and tested. v0.5's `AuthentikIdentityProvider` is shipped for its forward-auth header path — that half needed no live instance, only Authentik's stable, documented header set; the OIDC token path (validating `X-authentik-jwt` against the issuer's JWKS) does need a live instance and is planned for v0.5.1. Further work beyond that is paused pending the `greentechhub-fastapi`/`greentechhub-django` adapter packages existing and consuming this library (needed for v0.6 validation and the v1.0 bar). The phased rollout (v0.1 → v1.0) and per-service migration tracking remain a living checklist in [TODO.md](TODO.md).
 
 ## 📄 Licence
 

@@ -1,7 +1,14 @@
-"""identity.provider — IdentityProvider protocol and DevelopmentIdentityProvider,
-the first of two IdentityProvider implementations docs/identity.md calls for
-(AuthentikIdentityProvider is deferred to v0.5, once an Authentik instance
-exists to test against — see TODO.md).
+"""identity.provider — IdentityProvider protocol, DevelopmentIdentityProvider,
+and AuthentikIdentityProvider — the two IdentityProvider implementations
+docs/identity.md calls for.
+
+AuthentikIdentityProvider ships its forward-auth *header* path only —
+that's "header-dict-in, Identity-out", the same posture proxy.trusted_proxy
+already takes, and needs no live Authentik instance to build or test
+against: Authentik's forward-auth header set is stable and documented. Its
+OIDC *token* path (validating raw.headers["X-authentik-jwt"] against the
+issuer's JWKS) does need a live instance to fetch/validate against and is
+deferred to v0.5.1 — see TODO.md.
 
 Framework-independent: an IdentityProvider takes/returns plain data (a
 RawAuthContext in, an Identity | None out), never a Request/Response object —
@@ -10,6 +17,7 @@ RawAuthContext in, an Identity | None out), never a Request/Response object —
 dependency) is adapter-layer, not this module's concern.
 """
 
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
@@ -24,6 +32,10 @@ _DEV_SUBJECT = "dev-user"
 _DEV_USERNAME = "dev"
 _DEV_EMAIL = "dev@localhost"
 _DEV_GROUPS = ("dev",)
+
+_DEFAULT_HEADER_PREFIX = "X-authentik-"
+_DEFAULT_GROUPS_SEPARATOR = "|"
+_DEFAULT_REQUIRE_HEADERS: tuple[str, ...] = ("username",)
 
 
 class IdentityProvider(Protocol):
@@ -201,3 +213,111 @@ class DevelopmentIdentityProvider:
             )
         except (jwt.InvalidTokenError, KeyError, TypeError):
             return None
+
+
+class AuthentikIdentityProvider:
+    """Resolves an Identity from Authentik's forward-auth header set — the
+    headers an Authentik outpost adds to a request once it's already
+    authenticated the caller, before forwarding it on to this service.
+
+    Forward-auth headers only: OIDC token validation (verifying
+    raw.headers["X-authentik-jwt"], when configured, against the issuer's
+    JWKS) needs a live Authentik instance to fetch/validate against and is
+    deferred to v0.5.1 (see TODO.md) — not built here. The live instance
+    *validates* this provider; it doesn't gate building it, since the
+    forward-auth header shape itself is stable and documented independent
+    of any specific running instance.
+
+    Satisfies IdentityProvider structurally, same as DevelopmentIdentityProvider.
+
+    *** Security note — read before wiring this into an adapter ***
+    These headers are only trustworthy when the request actually came
+    through the trusted reverse proxy running the Authentik outpost — an
+    untrusted direct connection can set any X-authentik-* header itself,
+    claiming to be anyone. This class deliberately never sees the
+    connection's remote address, so it cannot perform that check itself;
+    the *adapter* must call
+    proxy.trusted_proxy.is_trusted_proxy(remote_addr, settings.trusted_proxies)
+    and treat an untrusted remote_addr as "no identity" (never construct a
+    RawAuthContext from these headers at all in that case) *before* this
+    provider ever sees them. See greentechhub-fastapi's docs/auth.md for the
+    adapter-side gate this requires.
+
+    Header handling is case-insensitive: HTTP header names are
+    case-insensitive on the wire, and different server/proxy stacks
+    normalize casing differently, so raw.headers is read via a lowercased
+    view built once per resolve_sync call rather than assuming any
+    particular casing convention already holds.
+    """
+
+    def __init__(
+        self,
+        *,
+        header_prefix: str = _DEFAULT_HEADER_PREFIX,
+        groups_separator: str = _DEFAULT_GROUPS_SEPARATOR,
+        require_headers: Sequence[str] = _DEFAULT_REQUIRE_HEADERS,
+    ) -> None:
+        self._header_prefix = header_prefix.lower()
+        self._groups_separator = groups_separator
+        self._require_headers = tuple(name.lower() for name in require_headers)
+
+    def resolve_sync(self, raw: RawAuthContext) -> Identity | None:
+        """Resolve `raw.headers` into an Identity, synchronously.
+
+        Returns None — never raises — whenever any of `require_headers` is
+        absent, and unconditionally whenever `username` itself is absent
+        (regardless of `require_headers`'s configuration): Identity.username
+        is a required, non-Optional field with no sensible empty default, so
+        its presence is a hard invariant here, not merely a caller-tunable
+        default the way the *other* entries in `require_headers` are.
+
+        `subject` is the `uid` header, falling back to `username` when `uid`
+        wasn't sent — some Authentik configurations omit it. `groups` splits
+        the `groups` header on `groups_separator` (Authentik's own default
+        is "|"), stripping whitespace and dropping empty entries; absent
+        entirely defaults to []. `claims` captures *every* header under
+        `header_prefix`, prefix-stripped — including `username`/`uid`/
+        `groups`/`email` again alongside the modeled fields, plus anything
+        this class doesn't parse by name (`name`, `jwt`, or a future
+        optional header a deployment enables) — a raw, lossless view
+        alongside the modeled convenience fields above it.
+        """
+        lowered = {key.lower(): value for key, value in raw.headers.items()}
+
+        def get(name: str) -> str | None:
+            return lowered.get(f"{self._header_prefix}{name}")
+
+        for required in self._require_headers:
+            if not get(required):
+                return None
+
+        username = get("username")
+        if not username:
+            return None
+
+        raw_groups = get("groups") or ""
+        groups = [
+            group.strip()
+            for group in raw_groups.split(self._groups_separator)
+            if group.strip()
+        ]
+        claims = {
+            key[len(self._header_prefix):]: value
+            for key, value in lowered.items()
+            if key.startswith(self._header_prefix)
+        }
+
+        return Identity(
+            subject=get("uid") or username,
+            username=username,
+            email=get("email"),
+            groups=groups,
+            claims=claims,
+        )
+
+    async def resolve(self, raw: RawAuthContext) -> Identity | None:
+        """Async wrapper around `resolve_sync` — same "no actual I/O, don't
+        asyncio.run" reasoning as DevelopmentIdentityProvider.resolve:
+        reading already-present headers is in-memory work, nothing to await.
+        """
+        return self.resolve_sync(raw)

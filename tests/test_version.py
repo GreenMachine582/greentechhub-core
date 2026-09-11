@@ -13,7 +13,7 @@ from greentechhub_core.version import (
 
 
 def test_returns_version_of_an_actually_installed_package():
-    assert get_package_version("greentechhub-core") == "0.4.1"
+    assert get_package_version("greentechhub-core") == "0.5.0"
 
 
 def test_returns_none_for_a_package_that_is_not_installed():
@@ -25,12 +25,12 @@ def test_returns_none_for_a_package_that_is_not_installed():
 
 def test_default_prefix_includes_this_package_at_its_installed_version():
     result = get_installed_versions()
-    assert result["greentechhub-core"] == "0.4.1"
+    assert result["greentechhub-core"] == "0.5.0"
 
 
 def test_prefix_match_is_case_insensitive():
     result = get_installed_versions(prefix="GREENTECHHUB-")
-    assert result["greentechhub-core"] == "0.4.1"
+    assert result["greentechhub-core"] == "0.5.0"
 
 
 def test_implausible_prefix_returns_empty_dict():
@@ -44,7 +44,7 @@ def test_implausible_prefix_returns_empty_dict():
 def test_combines_supplied_service_version_with_discovered_packages():
     info = get_version_info(service_version="1.2.3")
     assert info.service == "1.2.3"
-    assert info.packages["greentechhub-core"] == "0.4.1"
+    assert info.packages["greentechhub-core"] == "0.5.0"
 
 
 def test_service_defaults_to_none_when_not_supplied():
