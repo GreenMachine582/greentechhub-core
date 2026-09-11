@@ -3,6 +3,8 @@
 # ✅ TODO / Milestones
 
 > This file is a living checklist — tick items off as they land instead of regenerating it. See [README.md](README.md) for context and [docs/](docs/) for the detailed design behind each item.
+>
+> A milestone isn't ticked off until its version tag (`git tag vX.Y.0`) actually exists — matching `pyproject.toml`.
 
 ## 🗺️ Milestones
 
