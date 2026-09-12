@@ -107,6 +107,43 @@ class EventBus:
                         exc_info=True,
                     )
 
+    def publish_sync(self, event: Event) -> None:
+        """Synchronous counterpart to `publish()`, for a publisher with no
+        event loop to await from (Django middleware, a CLI entry point).
+
+        Dispatches only to subscribers registered as a plain sync callable
+        (`inspect.iscoroutinefunction`). An async subscriber can't be
+        awaited here, and calling it without awaiting would just create an
+        unrun coroutine and leak a "never awaited" warning, so it is
+        skipped entirely — logged at WARNING, not silently — rather than
+        invoked. This mirrors the asymmetry `identity.provider.
+        resolve_sync` already accepts: a sync call path is a strict subset
+        of what the async path supports, not a fully equivalent twin of it.
+
+        Same exception handling as `publish()`: a raising subscriber is
+        logged at ERROR and does not stop dispatch to the rest.
+        """
+        for event_type, callbacks in list(self._subscribers.items()):
+            if not isinstance(event, event_type):
+                continue
+            for callback in list(callbacks):
+                if inspect.iscoroutinefunction(callback):
+                    _logger.warning(
+                        "publish_sync() skipped async subscriber %r for %s; only "
+                        "sync subscribers run outside an event loop",
+                        callback,
+                        type(event).__name__,
+                    )
+                    continue
+                try:
+                    callback(event)
+                except Exception:
+                    _logger.error(
+                        "event subscriber raised while handling %s",
+                        type(event).__name__,
+                        exc_info=True,
+                    )
+
     def clear(self) -> None:
         """Remove every subscription. Exists for test isolation — a test
         using the shared `default_event_bus` (via the module-level

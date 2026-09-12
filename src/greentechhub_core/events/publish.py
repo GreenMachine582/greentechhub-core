@@ -33,6 +33,18 @@ from greentechhub_core.events.types import Event
 _logger = logging.getLogger("greentechhub_core.events")
 
 
+def publish_sync(event: Event) -> None:
+    """Synchronous counterpart to `publish()`, for a publisher that has no
+    event loop to await from — Django middleware, a CLI entry point. Logs
+    the same one structured INFO line `publish()` does, then dispatches
+    via `EventBus.publish_sync`, which runs only sync subscribers (an
+    async one is skipped and logged at WARNING — see that method's
+    docstring for why it can't just be awaited from here).
+    """
+    _logger.info(_render(event))
+    default_event_bus.publish_sync(event)
+
+
 async def publish(event: Event) -> None:
     """Log `event` as one structured INFO line, then dispatch it to every
     subscriber registered on `default_event_bus`.
