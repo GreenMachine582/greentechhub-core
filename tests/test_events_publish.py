@@ -5,7 +5,7 @@ import logging
 
 import pytest
 
-from greentechhub_core.events import Event, default_event_bus, publish, subscribe
+from greentechhub_core.events import Event, default_event_bus, publish, publish_sync, subscribe
 from greentechhub_core.logging.setup import configure_logging
 
 
@@ -136,3 +136,42 @@ def test_publish_continues_dispatching_when_one_subscriber_raises(capsys, caplog
 
     assert len(received) == 1
     assert any(record.levelname == "ERROR" for record in caplog.records)
+
+
+# publish_sync
+
+
+def test_publish_sync_emits_one_json_log_line_at_info(capsys):
+    configure_logging("INFO")
+
+    publish_sync(_UserCreated(user_id="u1"))
+
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert len(lines) == 1
+    payload = json.loads(lines[0])
+    assert payload["level"] == "INFO"
+
+
+def test_publish_sync_dispatches_to_a_subscribed_sync_callback(capsys):
+    configure_logging("INFO")
+    received = []
+    subscribe(_UserCreated, received.append)
+
+    publish_sync(_UserCreated(user_id="u1"))
+
+    assert len(received) == 1
+
+
+def test_publish_sync_skips_a_subscribed_async_callback(capsys, caplog):
+    configure_logging("INFO")
+    received = []
+
+    async def _handler(event: _UserCreated) -> None:
+        received.append(event)
+
+    subscribe(_UserCreated, _handler)
+
+    with caplog.at_level(logging.WARNING, logger="greentechhub_core.events"):
+        publish_sync(_UserCreated(user_id="u1"))
+
+    assert received == []

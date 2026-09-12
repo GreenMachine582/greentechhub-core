@@ -81,6 +81,67 @@ def test_multiple_subscribers_on_the_same_type_are_all_invoked_in_registration_o
     assert order == ["first", "second"]
 
 
+# EventBus.publish_sync
+
+
+def test_publish_sync_invokes_a_subscribed_sync_callback():
+    bus = EventBus()
+    received = []
+    bus.subscribe(_TestEvent, received.append)
+
+    bus.publish_sync(_TestEvent(value=1))
+
+    assert len(received) == 1
+    assert received[0].value == 1
+
+
+def test_publish_sync_skips_an_async_subscriber_and_warns(caplog):
+    bus = EventBus()
+    received = []
+
+    async def _handler(event: _TestEvent) -> None:
+        received.append(event)
+
+    bus.subscribe(_TestEvent, _handler)
+
+    with caplog.at_level(logging.WARNING, logger="greentechhub_core.events"):
+        bus.publish_sync(_TestEvent())
+
+    assert received == []
+    assert any(record.levelname == "WARNING" for record in caplog.records)
+
+
+def test_publish_sync_still_invokes_other_sync_subscribers_when_one_is_async(caplog):
+    bus = EventBus()
+    received = []
+
+    async def _async_handler(_event: _TestEvent) -> None:
+        pass
+
+    bus.subscribe(_TestEvent, _async_handler)
+    bus.subscribe(_TestEvent, received.append)
+
+    with caplog.at_level(logging.WARNING, logger="greentechhub_core.events"):
+        bus.publish_sync(_TestEvent())
+
+    assert len(received) == 1
+
+
+def test_publish_sync_continues_dispatching_when_one_callback_raises():
+    bus = EventBus()
+    received = []
+
+    def _raises(_event: _TestEvent) -> None:
+        raise RuntimeError("boom")
+
+    bus.subscribe(_TestEvent, _raises)
+    bus.subscribe(_TestEvent, received.append)
+
+    bus.publish_sync(_TestEvent())
+
+    assert len(received) == 1
+
+
 # unsubscribe
 
 
