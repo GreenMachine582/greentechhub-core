@@ -63,19 +63,9 @@ Unblocks adapter packages, which had no reusable base classes to test their own 
 
 ## 🔄 Migration Tracking
 
-Per-consumer adoption progress. Neither service depends on `greentechhub-core` directly; both go through their framework's adapter package.
-
-### PyFinBot (via `greentechhub-fastapi`)
-- [ ] Consuming `config`/`logging`/`health`
-- [ ] Consuming `identity`/`permissions`
-
-### BottleBot (via `greentechhub-fastapi`)
-- [ ] Consuming `config`/`logging`/`health`
-- [ ] Consuming `identity`/`permissions`
-
-### Market Watch (planned, via `greentechhub-fastapi`)
-- [ ] Not started — service doesn't exist yet
-
-### GreenTechHub (via `greentechhub-django`)
-- [ ] Consuming `config`/`logging`/`health`
-- [ ] Consuming `identity`/`permissions`
+Per-consumer adoption tracking lives in each adapter's own `TODO.md`, not duplicated here — those have the
+real, specific tasks; this repo's consumers never depend on it directly, only through an adapter:
+- PyFinBot / BottleBot / Market Watch (via `greentechhub-fastapi`) —
+  [greentechhub-fastapi/TODO.md](https://github.com/GreenMachine582/greentechhub-fastapi/blob/main/TODO.md#-migration-tracking)
+- GreenTechHub (via `greentechhub-django`) —
+  [greentechhub-django/TODO.md](https://github.com/GreenMachine582/greentechhub-django/blob/main/TODO.md#-migration-tracking)
