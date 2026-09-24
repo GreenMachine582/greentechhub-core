@@ -46,7 +46,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 
 ## 🗺️ Status & Roadmap
 
-**On hold.** v0.1–v0.5 have shipped — `config`/`logging`/`health`/`proxy`/`version`, `query`/`security`/`types`, `identity`/`permissions`, `events`/`feature_flags`, and `contracts` are all implemented and tested. v0.5's `AuthentikIdentityProvider` is shipped for its forward-auth header path — that half needed no live instance, only Authentik's stable, documented header set; the OIDC token path (validating `X-authentik-jwt` against the issuer's JWKS) does need a live instance and is planned for v0.5.1. Part of v0.6 has landed ahead of the rest: `background.locks` (`Lock`/`FileLock`) and `observability.resource`'s `get_resource_attributes`, plus the `check_database`/`check_external` health checks that v0.1 originally dropped — none of it needed a scheduler, an OTel collector, or a live consumer to build. The remainder (a real scheduler, the full OTel `TracerProvider`/`MeterProvider` setup, `check_redis`) stays deferred on its own triggers. Further work beyond that is paused pending the `greentechhub-fastapi`/`greentechhub-django` adapter packages existing and consuming this library (needed for v0.6 validation and the v1.0 bar). The phased rollout (v0.1 → v1.0) and per-service migration tracking remain a living checklist in [TODO.md](TODO.md).
+Shipped versions and their notes: [CHANGELOG.md](CHANGELOG.md) and the [Releases page](https://github.com/GreenMachine582/greentechhub-core/releases) (both written by release-please from conventional commits). Open work: [TODO.md](TODO.md). Branches, PRs and how a release is cut: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📄 Licence
 
