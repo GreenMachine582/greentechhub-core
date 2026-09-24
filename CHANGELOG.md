@@ -5,6 +5,13 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.6.1](https://github.com/GreenMachine582/greentechhub-core/compare/v0.6.0...v0.6.1) (2026-09-24)
+
+
+### Documentation
+
+* point TODO.md's migration tracking at each adapter's own file ([6342dcb](https://github.com/GreenMachine582/greentechhub-core/commit/6342dcb75294a9e57db84e831d53befb7d366a9b))
+
 ## [0.6.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.5.0...v0.6.0) (2026-09-13)
 
 ### Features

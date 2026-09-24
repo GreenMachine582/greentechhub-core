@@ -1,6 +1,6 @@
 [project]
 name = "greentechhub-core"
-version = "0.6.0"
+version = "0.6.1"
 description = "Framework-independent foundation (config, logging, identity, permissions, and more) for the GreenTechHub ecosystem"
 requires-python = ">=3.12"
 dependencies = ["pydantic-settings>=2.6", "bcrypt>=4.0", "PyJWT>=2.8"]
