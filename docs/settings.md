@@ -2,8 +2,8 @@
 
 # ⚙️ Settings and Role Resolution
 
-> **Status: partly shipped.** Role resolution and setting definitions (with resolution and the built-ins) have
-> shipped. Settings stores, the `Settings` facade and the storage tables are still planned, as the design the
+> **Status: partly shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings
+> stores and the `Settings` facade have shipped. The SQLAlchemy storage tables are still planned, as the design the
 > [TODO.md](../TODO.md#settings--permissions) items build towards. When an item ships, its section here moves from
 > "planned" to "shipped".
 
@@ -108,13 +108,48 @@ tuple (or a subset) to its own registry.
 
 Further shared settings, such as compact density, are a separate scoping item.
 
-## Settings stores and facade (planned)
+## Settings stores and facade (shipped)
 
-- **`SettingsStore`**: a Protocol keyed by `(scope, subject | None, key)`, with `get_many`, `set` and `delete`.
-  `InMemorySettingsStore` and `JsonFileSettingsStore` are the reference implementations.
-- **`Settings(registry, store)`**: the facade, with `effective(identity)`, `get`, `set_user` and
-  `set_app(..., granted=...)`. `set_app` checks `edit_permission`. It feeds the store's values and the env overrides
-  into the registry's resolution above.
+| Piece | Shape |
+|---|---|
+| `SettingsStore` | Protocol keyed by `(scope, subject \| None, key)`: `get_many(scope, subject)`, `set`, `delete`, each with a `_sync` twin |
+| `InMemorySettingsStore` | Process-local reference store, for tests and single-process tools |
+| `JsonFileSettingsStore` | One JSON file, `{"app": {...}, "user": {subject: {...}}}`, for services with no database |
+| `Settings(registry, store)` | The facade: `effective`, `get`, `set_user`/`reset_user`, `set_app`/`reset_app`, each with a `_sync` twin |
+| `SettingsStoreContract` | Conformance suite every store runs (`greentechhub_core.contracts.settings`) |
+
+```python
+from greentechhub_core.settings import JsonFileSettingsStore, Settings, SettingsRegistry
+from greentechhub_core.settings.builtins import USER_PREFERENCES
+
+settings = Settings(SettingsRegistry([*USER_PREFERENCES, BANNER]), JsonFileSettingsStore("data/settings.json"))
+
+await settings.effective(identity)                       # every setting's value for this person
+await settings.set_user(identity, "ui.theme", "dark")
+granted = await resolver.granted(identity)               # RoleResolver, or any set of permission strings
+await settings.set_app("site.banner", "Down at 5pm", granted=granted)
+```
+
+- **Owners.** An APP value's owner is `(APP, None)`; a USER value's is `(USER, identity.subject)`. A store raises
+  `ValueError` for an APP owner with a subject or a USER owner without one.
+- **Stores keep what they're given.** A store doesn't know the registry. `Settings` validates every write first,
+  and resolution skips a stored value that no longer validates.
+- **Env overrides** are read once when `Settings` is constructed (`registry.env_overrides()`, or pass `env=`), so a
+  malformed one fails at startup.
+- **Anonymous** (`identity=None`) reads skip the user layer. Anonymous writes raise `SettingPermissionError` with
+  `permission=None`.
+- **`set_user`** only takes USER settings (an APP key raises `ValueError`). `reset_user` drops the person's own value
+  so they see the app value again.
+- **`set_app`** takes any setting. For a USER setting it sets the default everyone without their own value sees.
+  When the setting has an `edit_permission`, `granted` must contain it or `SettingPermissionError` (a
+  `PermissionError`) is raised. A setting without one is left to the caller to guard, e.g. by only showing the admin
+  form to admins. `granted` is required either way. `reset_app` drops the app value, with the same check.
+- **Values are typed.** Writes go through `Setting.validate`, so a form string needs `registry.coerce` first.
+- **`JsonFileSettingsStore`** reads the file on every call and replaces it atomically on write. It serialises writes
+  within one process only, so run one writer per file. A missing file reads as empty; a malformed one raises
+  `ValueError` and is never overwritten.
+- `settings/` imports neither `permissions/` nor `identity/`: `identity` is anything with a `subject`, and `granted`
+  is any collection of permission strings.
 
 ## Storage tables (planned, `[sqlalchemy]` extra)
 
