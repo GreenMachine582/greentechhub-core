@@ -14,3 +14,9 @@ This module distinguishes two different things:
 - A `Role` = bundle-of-permissions helper (`Trader = {portfolio.view, portfolio.edit, reports.view}`), so services can evolve from permissions rather than hardcoding role checks — but the bundle definition and the grant itself still live in the service, not in this package.
 
 The permission catalogue format is a plain `resource.action` string convention — typed helpers give typo-safety, and it's simple enough for a single per-service catalogue to stay readable as it grows.
+
+## Planned: resolving granted permissions
+
+> **Planned, not shipped.** See [docs/settings.md](settings.md#role-resolution-planned) and [TODO.md](../TODO.md#settings--permissions).
+
+Today `granted` is whatever the service looks up itself. A planned, opt-in resolver will build it from any `Identity`, with no Authentik requirement. It combines a service-supplied group → role map, optional per-user grants and a bootstrap subject → role map. Core still holds no grant data: the optional grant stores are a protocol plus reference implementations, and when a service uses one, the rows live in that service's own database. Roles and permission values stay service-defined.

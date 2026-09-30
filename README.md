@@ -41,6 +41,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | [docs/events.md](docs/events.md) | 📡 `publish`/`subscribe` event bus abstraction |
 | [docs/query.md](docs/query.md) | 🔍 `Filter`/`Page`/`PageRequest` contracts shared by both adapters |
 | [docs/health.md](docs/health.md) | 🩺 Health check primitives and `HealthResult` |
+| [docs/settings.md](docs/settings.md) | ⚙️ Runtime app/user settings and role resolution (planned) |
 | [docs/modules.md](docs/modules.md) | 🧩 Feature flags, observability, security, proxy, background, CLI |
 | [docs/testing.md](docs/testing.md) | 🧪 Unit + contract testing strategy |
 
