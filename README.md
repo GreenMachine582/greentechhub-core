@@ -19,6 +19,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `logging` | Structured (JSON) logging setup, request-ID-aware formatters, shaped for the homelab's Loki/Alloy pipeline                 | [docs/architecture.md](docs/architecture.md) |
 | `identity` | Framework-independent identity model — the centrepiece of this package                                                     | [docs/identity.md](docs/identity.md) |
 | `permissions` | Permission-check primitives, typed permission-catalogue helpers, and opt-in role resolution (`RoleResolver` from groups/bootstrap/`GrantStore`) | [docs/permissions.md](docs/permissions.md) |
+| `settings` | Opt-in runtime settings: `Setting` definitions, a `SettingsRegistry` with validate/coerce, user → app → env → default resolution, and shared `builtins.USER_PREFERENCES` | [docs/settings.md](docs/settings.md) |
 | `events` | `publish()`/`subscribe()` + typed event definitions — logs events today, Redis pub/sub later                               | [docs/events.md](docs/events.md) |
 | `feature_flags` | A `FeatureFlagProvider` interface; env/static-file-backed implementation to start                                          | [docs/modules.md](docs/modules.md#feature-flags) |
 | `health` | Check primitives + a `HealthResult` type — `check_disk`/`check_database`/`check_external` ship today; `check_redis` lands when Redis is deployed for some other reason | [docs/health.md](docs/health.md) |
@@ -41,7 +42,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | [docs/events.md](docs/events.md) | 📡 `publish`/`subscribe` event bus abstraction |
 | [docs/query.md](docs/query.md) | 🔍 `Filter`/`Page`/`PageRequest` contracts shared by both adapters |
 | [docs/health.md](docs/health.md) | 🩺 Health check primitives and `HealthResult` |
-| [docs/settings.md](docs/settings.md) | ⚙️ Runtime app/user settings (planned) and role resolution |
+| [docs/settings.md](docs/settings.md) | ⚙️ Runtime app/user settings (stores planned) and role resolution |
 | [docs/modules.md](docs/modules.md) | 🧩 Feature flags, observability, security, proxy, background, CLI |
 | [docs/testing.md](docs/testing.md) | 🧪 Unit + contract testing strategy |
 

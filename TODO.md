@@ -17,15 +17,8 @@
 ### Settings & permissions
 Design: [docs/settings.md](docs/settings.md). Every item is opt-in, usable from this package alone, and works
 without Authentik (local auth plus a bootstrap subject → role map). Each PR updates any doc it would otherwise
-contradict. The order runs across repos: core #2–#4 here (#1, role resolution, has shipped), then fastapi #5,
-ui #6–#8, fastapi #9, ui #10, fastapi #11, and the #12 scoping item.
-- [ ] **#2 `feat(settings): setting definitions, registry and resolution`**
-  - `SettingScope`, `Setting`, `SettingsRegistry` with validate/coerce.
-  - Resolution order: user → app → env → default.
-  - Opt-in `builtins.USER_PREFERENCES`: `ui.theme`, `locale.timezone`, `locale.date_format`, `ui.page_size`.
-  - `settings/` doesn't import `permissions/`.
-  - Docs: README module row, `docs/architecture.md`, `docs/modules.md`, and `docs/settings.md` from planned to
-    shipped.
+contradict. The order runs across repos: core #3–#4 here (#1, role resolution, and #2, setting definitions, have
+shipped), then fastapi #5, ui #6–#8, fastapi #9, ui #10, fastapi #11, and the #12 scoping item.
 - [ ] **#3 `feat(settings): SettingsStore protocol, in-memory/JSON stores and Settings service`**
   - `SettingsStore` protocol with `InMemorySettingsStore` and `JsonFileSettingsStore`.
   - `Settings` facade: `effective`, `get`, `set_user`, and `set_app` with a permission check.

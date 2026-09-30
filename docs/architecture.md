@@ -42,6 +42,11 @@ greentechhub-core/
 │   │   ├── check.py               # has_permission(identity, "portfolio.view", granted=...)
 │   │   ├── resolver.py            # PermissionResolver protocol + RoleResolver (groups/bootstrap/grants → granted)
 │   │   └── grants.py              # GrantStore protocol + InMemoryGrantStore
+│   ├── settings/
+│   │   ├── definitions.py         # SettingScope, SettingType, Setting (validate/coerce)
+│   │   ├── registry.py            # SettingsRegistry
+│   │   ├── resolution.py          # user → app → env → default; env overrides (SETTING_UI__PAGE_SIZE)
+│   │   └── builtins.py            # opt-in USER_PREFERENCES: ui.theme, locale.timezone, locale.date_format, ui.page_size
 │   ├── events/
 │   │   ├── publish.py
 │   │   ├── subscribe.py
@@ -81,5 +86,5 @@ greentechhub-core/
 ```
 
 See [docs/identity.md](identity.md) for the identity model, 
-[docs/permissions.md](permissions.md), [docs/events.md](events.md), [docs/query.md](query.md), and 
+[docs/permissions.md](permissions.md), [docs/settings.md](settings.md), [docs/events.md](events.md), [docs/query.md](query.md), and 
 [docs/health.md](health.md) for the higher-detail modules, and [docs/modules.md](modules.md) for the rest.
