@@ -7,7 +7,8 @@ store any actual permission values (no "PORTFOLIO_VIEW = ..." lives here) —
 "portfolio.view", "import.run", "reports.view" are worked examples from the
 doc, not members this package defines. Each service owns its own full
 catalogue (a plain module of Permission constants built via `permission()`)
-and its own grants (looked up from that service's own storage); this module
+and its own grants (looked up from that service's own storage, or resolved
+by resolver.RoleResolver from the Roles the service passes it); this module
 only supplies the typed building block and typo-safety, never a shared
 registry. A module-level dict/set tracking "every Permission ever
 constructed" would silently recreate exactly the "three places defining the
