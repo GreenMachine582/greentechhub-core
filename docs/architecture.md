@@ -35,11 +35,13 @@ greentechhub-core/
 │   ├── logging/
 │   │   └── setup.py
 │   ├── identity/
-│   │   ├── models.py              # Identity, User, Claims, Scope, Group
-│   │   └── provider.py            # IdentityProvider protocol + DevelopmentIdentityProvider; AuthentikIdentityProvider planned (v0.5)
+│   │   ├── models.py              # Identity, RawAuthContext
+│   │   └── provider.py            # IdentityProvider protocol + DevelopmentIdentityProvider + AuthentikIdentityProvider
 │   ├── permissions/
 │   │   ├── catalogue.py           # typed permission-string helpers (e.g. "portfolio.view")
-│   │   └── check.py               # has_permission(identity, "portfolio.view")
+│   │   ├── check.py               # has_permission(identity, "portfolio.view", granted=...)
+│   │   ├── resolver.py            # PermissionResolver protocol + RoleResolver (groups/bootstrap/grants → granted)
+│   │   └── grants.py              # GrantStore protocol + InMemoryGrantStore
 │   ├── events/
 │   │   ├── publish.py
 │   │   ├── subscribe.py
@@ -70,6 +72,7 @@ greentechhub-core/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
+│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions
 │   └── types/
 │       └── common.py              # FlashMessage, Result, etc.
 ├── tests/

@@ -1,17 +1,18 @@
 [← Back to README](../README.md)
 
-# ⚙️ Settings and Role Resolution (planned)
+# ⚙️ Settings and Role Resolution
 
-> **Status: planned, not shipped.** This is the design the [TODO.md](../TODO.md#settings--permissions) items build
-> towards. Nothing described here exists yet. When an item ships, its section here moves from "planned" to "shipped".
+> **Status: partly shipped.** Role resolution has shipped. Settings and the storage tables are still planned, as the
+> design the [TODO.md](../TODO.md#settings--permissions) items build towards. When an item ships, its section here
+> moves from "planned" to "shipped".
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
 
 - **App settings.** Admins change these at runtime, e.g. a default page size or a maintenance banner.
 - **User preferences.** Each person sets their own, e.g. theme, timezone or date format.
 
-They also need a way to decide *who counts as an admin*. `permissions/` already has the vocabulary (`Permission`,
-`Role`, `has_permission`), but nothing turns an `Identity` into a set of granted permissions.
+They also need a way to decide *who counts as an admin*. `permissions/` has the vocabulary (`Permission`, `Role`,
+`has_permission`), and `RoleResolver` turns an `Identity` into a set of granted permissions.
 
 ## Principles
 
@@ -34,14 +35,16 @@ They also need a way to decide *who counts as an admin*. `permissions/` already 
   - Core ships no permission values or roles either. The service supplies its own, as
     [permissions.md](permissions.md) already requires.
 
-## Role resolution (planned)
+## Role resolution (shipped)
 
 | Piece | Shape |
 |---|---|
-| `PermissionResolver` | Protocol: `granted(identity) -> frozenset[Permission]`, sync and async |
-| `GroupRoleResolver` | `Identity.groups` → the service's `Role`s via a `group_roles` mapping |
+| `PermissionResolver` | Protocol: `granted(identity) -> frozenset[Permission]`, with a `granted_sync` twin |
+| `RoleResolver` | Union of `group_roles` (group → roles), `bootstrap` (subject → roles) and an optional `GrantStore` |
 | `GrantStore` | Protocol: `roles_for(subject)`, `assign`, `revoke`, `list_assignments`; `InMemoryGrantStore` reference |
-| `CombinedResolver` | Union of group roles, stored grants and a `bootstrap` subject → roles map |
+
+Usage and edge cases (fail-fast config, ignored stale grants, anonymous users) are in
+[permissions.md](permissions.md#resolving-granted-permissions).
 
 The union covers every way a person can be given roles:
 

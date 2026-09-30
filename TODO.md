@@ -17,17 +17,8 @@
 ### Settings & permissions
 Design: [docs/settings.md](docs/settings.md). Every item is opt-in, usable from this package alone, and works
 without Authentik (local auth plus a bootstrap subject → role map). Each PR updates any doc it would otherwise
-contradict. The order runs across repos: core #1–#4 here, then fastapi #5, ui #6–#8, fastapi #9, ui #10,
-fastapi #11, and the #12 scoping item.
-- [ ] **#1 `feat(permissions): resolve granted permissions from groups and grants`**
-  - `PermissionResolver` protocol, sync and async.
-  - `GroupRoleResolver` using a service-supplied `group_roles` map.
-  - `GrantStore` protocol and `InMemoryGrantStore`.
-  - `CombinedResolver` with a `bootstrap` subject → roles map.
-  - `PermissionResolverContract` and `GrantStoreContract`.
-  - No built-in roles or permissions.
-  - Docs: rewrite `docs/permissions.md` and the `catalogue.py`/`check.py` docstrings; `docs/architecture.md`
-    layout (and fix its stale `identity/models.py` line); the README `contracts` row; `docs/testing.md`.
+contradict. The order runs across repos: core #2–#4 here (#1, role resolution, has shipped), then fastapi #5,
+ui #6–#8, fastapi #9, ui #10, fastapi #11, and the #12 scoping item.
 - [ ] **#2 `feat(settings): setting definitions, registry and resolution`**
   - `SettingScope`, `Setting`, `SettingsRegistry` with validate/coerce.
   - Resolution order: user → app → env → default.
