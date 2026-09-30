@@ -46,7 +46,9 @@ greentechhub-core/
 │   │   ├── definitions.py         # SettingScope, SettingType, Setting (validate/coerce)
 │   │   ├── registry.py            # SettingsRegistry
 │   │   ├── resolution.py          # user → app → env → default; env overrides (SETTING_UI__PAGE_SIZE)
-│   │   └── builtins.py            # opt-in USER_PREFERENCES: ui.theme, locale.timezone, locale.date_format, ui.page_size
+│   │   ├── builtins.py            # opt-in USER_PREFERENCES: ui.theme, locale.timezone, locale.date_format, ui.page_size
+│   │   ├── store.py               # SettingsStore protocol + InMemorySettingsStore + JsonFileSettingsStore
+│   │   └── service.py             # Settings facade: effective/get, set_user, set_app (edit_permission check)
 │   ├── events/
 │   │   ├── publish.py
 │   │   ├── subscribe.py
@@ -77,7 +79,7 @@ greentechhub-core/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
-│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions
+│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings
 │   └── types/
 │       └── common.py              # FlashMessage, Result, etc.
 ├── tests/

@@ -3,6 +3,7 @@ from greentechhub_core.contracts.health import HealthCheckContract
 from greentechhub_core.contracts.identity import IdentityProviderContract
 from greentechhub_core.contracts.permissions import GrantStoreContract, PermissionResolverContract
 from greentechhub_core.contracts.query import PageContract
+from greentechhub_core.contracts.settings import SettingsStoreContract
 
 __all__ = [
     "FeatureFlagProviderContract",
@@ -11,4 +12,5 @@ __all__ = [
     "IdentityProviderContract",
     "PageContract",
     "PermissionResolverContract",
+    "SettingsStoreContract",
 ]
