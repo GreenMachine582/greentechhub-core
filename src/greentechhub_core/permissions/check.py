@@ -1,8 +1,9 @@
 """permissions.check — has_permission: the single check primitive this
 module provides (see docs/permissions.md). Deliberately just one function:
 a permission-string containment check against whatever `granted` collection
-the calling service already looked up from its own storage — this module
-holds no grants of its own (see catalogue.py's module docstring for why).
+the calling service already looked up from its own storage, or built with
+resolver.RoleResolver — this module holds no grants of its own (see
+catalogue.py's module docstring for why).
 """
 
 from collections.abc import Set as AbstractSet
@@ -40,8 +41,9 @@ def has_permission(
     `identity` inside this function, guarding the "pass-through only, never
     inspected" contract rather than silently allowing it. A service wanting
     an actual bypass (e.g. an "admin-users" group always passing)
-    implements that in its own permission-lookup code before calling
-    has_permission, not inside this function.
+    implements that in its own permission lookup before calling
+    has_permission (RoleResolver's `group_roles` is the opt-in way to do
+    it), not inside this function.
 
     `granted` is typed as `collections.abc.Set` (aliased `AbstractSet`), not
     the wider `Collection` — a service's "permissions granted to this user"

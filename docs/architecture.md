@@ -35,11 +35,20 @@ greentechhub-core/
 │   ├── logging/
 │   │   └── setup.py
 │   ├── identity/
-│   │   ├── models.py              # Identity, User, Claims, Scope, Group
-│   │   └── provider.py            # IdentityProvider protocol + DevelopmentIdentityProvider; AuthentikIdentityProvider planned (v0.5)
+│   │   ├── models.py              # Identity, RawAuthContext
+│   │   └── provider.py            # IdentityProvider protocol + DevelopmentIdentityProvider + AuthentikIdentityProvider
 │   ├── permissions/
 │   │   ├── catalogue.py           # typed permission-string helpers (e.g. "portfolio.view")
-│   │   └── check.py               # has_permission(identity, "portfolio.view")
+│   │   ├── check.py               # has_permission(identity, "portfolio.view", granted=...)
+│   │   ├── resolver.py            # PermissionResolver protocol + RoleResolver (groups/bootstrap/grants → granted)
+│   │   └── grants.py              # GrantStore protocol + InMemoryGrantStore
+│   ├── settings/
+│   │   ├── definitions.py         # SettingScope, SettingType, Setting (validate/coerce)
+│   │   ├── registry.py            # SettingsRegistry
+│   │   ├── resolution.py          # user → app → env → default; env overrides (SETTING_UI__PAGE_SIZE)
+│   │   ├── builtins.py            # opt-in USER_PREFERENCES: theme, density, motion, sidebar, timezone, date/number/time formats, page size
+│   │   ├── store.py               # SettingsStore protocol + InMemorySettingsStore + JsonFileSettingsStore
+│   │   └── service.py             # Settings facade: effective/get, set_user, set_app (edit_permission check)
 │   ├── events/
 │   │   ├── publish.py
 │   │   ├── subscribe.py
@@ -70,6 +79,11 @@ greentechhub-core/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
+│   ├── sqlalchemy/                # optional `[sqlalchemy]` extra
+│   │   ├── tables.py              # settings_table/role_grants_table on the service's MetaData
+│   │   ├── settings.py            # SQLAlchemySettingsStore
+│   │   └── grants.py              # SQLAlchemyGrantStore
+│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings
 │   └── types/
 │       └── common.py              # FlashMessage, Result, etc.
 ├── tests/
@@ -78,5 +92,5 @@ greentechhub-core/
 ```
 
 See [docs/identity.md](identity.md) for the identity model, 
-[docs/permissions.md](permissions.md), [docs/events.md](events.md), [docs/query.md](query.md), and 
+[docs/permissions.md](permissions.md), [docs/settings.md](settings.md), [docs/events.md](events.md), [docs/query.md](query.md), and 
 [docs/health.md](health.md) for the higher-detail modules, and [docs/modules.md](modules.md) for the rest.

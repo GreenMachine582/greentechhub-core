@@ -2,8 +2,9 @@
 third-party HTTP dependency.
 
 No httpx dependency in core, same reasoning as check_database's "no
-SQLAlchemy import": the injected `client` is duck-typed via a Protocol
-(structural, not isinstance-checked) instead. An adapter passes a real
+SQLAlchemy import" (core has no *required* SQLAlchemy dependency either):
+the injected `client` is duck-typed via a Protocol (structural, not
+isinstance-checked) instead. An adapter passes a real
 `httpx.AsyncClient` (or anything else shaped like one); core never imports
 it.
 """

@@ -11,7 +11,7 @@ class Identity:
     subject: str                # stable user ID
     username: str
     email: str | None
-    groups: list[str]           # from Authentik, or a dev fixture locally
+    groups: list[str]           # from Authentik, a dev fixture, or a service's own local login
     claims: dict[str, Any]      # raw claims, for anything not modeled explicitly
 
 # greentechhub_core/identity/provider.py
