@@ -30,6 +30,28 @@ ui #10, fastapi #11. #14 here has no dependencies and can land any time, but mus
   - Tests: a valid default; a default outside the choices raises `ValueError`; mapping and pair forms of `choices`.
   - Docs: the `docs/settings.md` "Landing page (planned)" section moves to shipped.
 
+#### Secret settings
+Settings whose value is a credential (an email app password, an API token) can't be plain settings: stores keep JSON
+as-is, `effective()` returns values to templates, and `SettingsViews` echoes a `str` back into the form. These items
+add an opt-in **secret** kind across the three packages. Order across repos: core #18 → ui #19 → fastapi #20, then
+releases core v0.8.0, ui v0.13.0 and fastapi v0.10.0 (fastapi pins core v0.8.0 first). The first consumer is
+PyFinBot's per-user email account for Commsec sync (its app password), registered in PyFinBot's `todo.md`.
+- [ ] **#18 `feat(settings): secret settings`**
+  - `Setting(..., secret=True)`, allowed for `str` only (`ValueError` otherwise).
+  - A `SecretCipher` protocol (`encrypt(str) -> str`, `decrypt(str) -> str`). `FernetCipher(key)` implements it
+    behind a new optional `[crypto]` extra (`cryptography`); importing it without the extra raises an `ImportError`
+    that names the extra.
+  - `Settings(registry, store, cipher=None)`:
+    - a registry holding a secret setting and no cipher fails fast at construction;
+    - writes (`set_user`/`set_app`) encrypt before the store, so stores stay unaware;
+    - `effective()` and `get()` never return the plaintext, only `SECRET_SET` or `None`;
+    - `get_secret(key, identity=None)` (sync and async) returns the plaintext for server code;
+    - `reset_user`/`reset_app` clear it, as usual.
+  - Secrets are excluded from env overrides.
+  - Tests: round-trip, the marker, a wrong key, a missing cipher, the ciphertext in the store, no env overrides.
+    Contract: `SettingsStoreContract` is unchanged (the store sees opaque strings).
+  - Docs: `docs/settings.md` "Secret settings" and the README row.
+
 ### v1.0 — Validated in production
 - [ ] Both adapter packages consuming this package
 - [ ] At least one FastAPI service consuming it in production
