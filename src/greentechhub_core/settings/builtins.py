@@ -7,8 +7,10 @@ passes them to its own registry:
     registry = SettingsRegistry(USER_PREFERENCES)
 
 or registers a subset. The keys are shared so greentechhub-ui can honour
-them across every service (theme, dates, tables) without per-service
-wiring.
+them across every service (theme, density, motion, sidebar, dates, numbers,
+tables) without per-service wiring. USER_PREFERENCES may grow as more shared
+keys are added; a service that wants a fixed set registers the individual
+constants instead.
 """
 
 import zoneinfo
@@ -66,4 +68,67 @@ PAGE_SIZE = Setting(
     group="Tables",
 )
 
-USER_PREFERENCES: tuple[Setting, ...] = (THEME, TIMEZONE, DATE_FORMAT, PAGE_SIZE)
+DENSITY = Setting(
+    key="ui.density",
+    type=SettingType.CHOICE,
+    default="comfortable",
+    scope=SettingScope.USER,
+    label="Density",
+    help_text="Compact fits more rows and fields on screen.",
+    choices={"comfortable": "Comfortable", "compact": "Compact"},
+    group="Appearance",
+)
+
+MOTION = Setting(
+    key="ui.motion",
+    type=SettingType.CHOICE,
+    default="system",
+    scope=SettingScope.USER,
+    label="Motion",
+    help_text="Reduce turns off animations and transitions.",
+    choices={"system": "Follow device", "reduce": "Reduce", "full": "Full"},
+    group="Appearance",
+)
+
+SIDEBAR_DEFAULT = Setting(
+    key="ui.sidebar_default",
+    type=SettingType.CHOICE,
+    default="expanded",
+    scope=SettingScope.USER,
+    label="Sidebar",
+    help_text="How the sidebar starts when you open a page.",
+    choices={"expanded": "Expanded", "rail": "Icons only"},
+    group="Appearance",
+)
+
+NUMBER_FORMAT = Setting(
+    key="locale.number_format",
+    type=SettingType.CHOICE,
+    default="comma_dot",
+    scope=SettingScope.USER,
+    label="Number format",
+    choices={"comma_dot": "1,234.56", "dot_comma": "1.234,56", "space_comma": "1 234,56"},
+    group="Locale",
+)
+
+TIME_FORMAT = Setting(
+    key="locale.time_format",
+    type=SettingType.CHOICE,
+    default="24h",
+    scope=SettingScope.USER,
+    label="Time format",
+    choices={"24h": "13:45", "12h": "1:45 pm"},
+    group="Locale",
+)
+
+USER_PREFERENCES: tuple[Setting, ...] = (
+    THEME,
+    TIMEZONE,
+    DATE_FORMAT,
+    PAGE_SIZE,
+    DENSITY,
+    MOTION,
+    SIDEBAR_DEFAULT,
+    NUMBER_FORMAT,
+    TIME_FORMAT,
+)
