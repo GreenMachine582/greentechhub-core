@@ -52,6 +52,11 @@ def test_effective_starts_at_the_defaults():
         "locale.timezone": "UTC",
         "locale.date_format": "iso",
         "ui.page_size": 25,
+        "ui.density": "comfortable",
+        "ui.motion": "system",
+        "ui.sidebar_default": "expanded",
+        "locale.number_format": "comma_dot",
+        "locale.time_format": "24h",
         "site.banner": "",
         "site.maintenance": False,
     }

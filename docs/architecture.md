@@ -46,7 +46,7 @@ greentechhub-core/
 │   │   ├── definitions.py         # SettingScope, SettingType, Setting (validate/coerce)
 │   │   ├── registry.py            # SettingsRegistry
 │   │   ├── resolution.py          # user → app → env → default; env overrides (SETTING_UI__PAGE_SIZE)
-│   │   ├── builtins.py            # opt-in USER_PREFERENCES: ui.theme, locale.timezone, locale.date_format, ui.page_size
+│   │   ├── builtins.py            # opt-in USER_PREFERENCES: theme, density, motion, sidebar, timezone, date/number/time formats, page size
 │   │   ├── store.py               # SettingsStore protocol + InMemorySettingsStore + JsonFileSettingsStore
 │   │   └── service.py             # Settings facade: effective/get, set_user, set_app (edit_permission check)
 │   ├── events/
