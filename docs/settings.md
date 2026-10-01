@@ -105,7 +105,38 @@ tuple (or a subset) to its own registry.
 | `locale.date_format` | choice | `iso` | `iso` (2026-01-31), `dmy` (31/01/2026), `mdy` (01/31/2026), `long` (31 Jan 2026) |
 | `ui.page_size` | int | `25` | 5–200 |
 
-Further shared settings, such as compact density, are a separate scoping item.
+### Further built-ins (planned)
+
+These were scoped in roadmap #12 and are registered as [TODO.md](../TODO.md#settings--permissions) #13 and #14. All
+are USER settings.
+
+| Constant | Key | Type | Default | Values (value → label) | Group |
+|---|---|---|---|---|---|
+| `DENSITY` | `ui.density` | choice | `comfortable` | `comfortable` → Comfortable, `compact` → Compact | Appearance |
+| `MOTION` | `ui.motion` | choice | `system` | `system` → Follow device, `reduce` → Reduce, `full` → Full | Appearance |
+| `SIDEBAR_DEFAULT` | `ui.sidebar_default` | choice | `expanded` | `expanded` → Expanded, `rail` → Icons only | Appearance |
+| `NUMBER_FORMAT` | `locale.number_format` | choice | `comma_dot` | `comma_dot` → 1,234.56, `dot_comma` → 1.234,56, `space_comma` → 1 234,56 | Locale |
+| `TIME_FORMAT` | `locale.time_format` | choice | `24h` | `24h` → 13:45, `12h` → 1:45 pm | Locale |
+| `landing_page_setting(choices, *, default)` | `ui.landing_page` | choice | the caller's | the service's own pages, url → label | Navigation |
+
+- **`USER_PREFERENCES` grows** by the five constants.
+  - The tuple is the set of shared keys that greentechhub-ui honours.
+  - A service already passing the whole tuple will show the new controls before ui applies them. That's the same
+    position the original four are in until ui's honouring items ship. A service that wants a fixed set registers the
+    individual constants instead.
+- **The landing page is a factory, not a constant,** and isn't in the tuple, because its choices are the service's
+  own pages. `Setting`'s own validation rejects a `default` that isn't one of them.
+- **`ui.sidebar_default`** seeds the sidebar's initial state from the server. As with the theme, localStorage stays as
+  the in-session toggle and the fallback for anonymous users.
+- **Honouring them is ui's job**, registered by greentechhub-ui's half of #12:
+  - `data-gth-density` and `data-gth-motion` on `<html>`;
+  - the number and time formats in the `number`, `money` and datetime filters;
+  - the sidebar seed;
+  - the landing-page redirect, which is fastapi's part.
+- **Deliberately not built-ins:**
+  - Notification preferences wait for ui's notification centre.
+  - APP-scope settings such as a currency symbol or a site banner are left to each service.
+  - Per-table hidden columns stay in localStorage, because they're per page and per table rather than a shared key.
 
 ## Settings stores and facade (shipped)
 
