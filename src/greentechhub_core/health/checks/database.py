@@ -2,8 +2,9 @@
 reachable via a SQLAlchemy-shaped async engine, or any other async probe a
 non-SQLAlchemy service wants to run instead.
 
-No SQLAlchemy import: core has no SQLAlchemy dependency of its own, the
-same "no third-party client dependency" posture check_external takes with
+No SQLAlchemy import: core has no *required* SQLAlchemy dependency (only
+the optional `[sqlalchemy]` extra, which this module doesn't use), the same
+"no third-party client dependency" posture check_external takes with
 httpx. Health is checked duck-typed against SQLAlchemy AsyncEngine's shape
 instead (engine.connect() -> an async context manager yielding a
 connection with exec_driver_sql) — exec_driver_sql specifically, not

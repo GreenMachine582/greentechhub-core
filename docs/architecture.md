@@ -79,6 +79,10 @@ greentechhub-core/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
+│   ├── sqlalchemy/                # optional `[sqlalchemy]` extra
+│   │   ├── tables.py              # settings_table/role_grants_table on the service's MetaData
+│   │   ├── settings.py            # SQLAlchemySettingsStore
+│   │   └── grants.py              # SQLAlchemyGrantStore
 │   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings
 │   └── types/
 │       └── common.py              # FlashMessage, Result, etc.
