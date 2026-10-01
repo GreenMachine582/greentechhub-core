@@ -17,15 +17,9 @@
 ### Settings & permissions
 Design: [docs/settings.md](docs/settings.md). Every item is opt-in, usable from this package alone, and works
 without Authentik (local auth plus a bootstrap subject → role map). Each PR updates any doc it would otherwise
-contradict. The order runs across repos: core #4 here (#1–#3, role resolution, setting definitions and the
-settings stores/facade, have shipped), then fastapi #5, ui #6–#8, fastapi #9, ui #10, fastapi #11, and the #12
-scoping item.
-- [ ] **#4 `feat(sqlalchemy): SQLAlchemy settings and grant stores`**
-  - Optional `[sqlalchemy]` extra.
-  - `gth_settings`/`gth_role_grants` tables on the service's `MetaData`, plus an Alembic recipe.
-  - `SQLAlchemySettingsStore`/`SQLAlchemyGrantStore`, with the contracts run against them (aiosqlite).
-  - Docs: reword "no SQLAlchemy dependency" to "no *required*" in `docs/health.md`, the
-    `health/checks/database.py`/`external.py` docstrings and README.
+contradict. The core items (#1–#4: role resolution, setting definitions, the settings stores/facade and the
+SQLAlchemy stores) have shipped. The order continues across repos: fastapi #5, ui #6–#8, fastapi #9, ui #10,
+fastapi #11, and the #12 scoping item here.
 - [ ] **#12 `docs: scope additional shared settings`** (with ui)
   - Decide on further opt-in built-ins: compact density for forms and tables, reduced motion, number/currency
     format, landing page, sidebar default, notification preferences.

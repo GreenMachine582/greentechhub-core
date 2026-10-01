@@ -2,10 +2,9 @@
 
 # ⚙️ Settings and Role Resolution
 
-> **Status: partly shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings
-> stores and the `Settings` facade have shipped. The SQLAlchemy storage tables are still planned, as the design the
-> [TODO.md](../TODO.md#settings--permissions) items build towards. When an item ships, its section here moves from
-> "planned" to "shipped".
+> **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
+> the `Settings` facade and the SQLAlchemy storage tables have all shipped. The adapter work that builds on them is
+> tracked in [TODO.md](../TODO.md#settings--permissions) and the fastapi/ui repos.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
 
@@ -151,8 +150,53 @@ await settings.set_app("site.banner", "Down at 5pm", granted=granted)
 - `settings/` imports neither `permissions/` nor `identity/`: `identity` is anything with a `subject`, and `granted`
   is any collection of permission strings.
 
-## Storage tables (planned, `[sqlalchemy]` extra)
+## Storage tables (shipped, `[sqlalchemy]` extra)
 
-`gth_settings` and `gth_role_grants` are defined on a `MetaData` the service passes in, so its own Alembic migrates
-them. `SQLAlchemySettingsStore` and `SQLAlchemyGrantStore` both take a session factory. The contracts run against
-every store.
+`pip install 'greentechhub-core[sqlalchemy]'` makes `greentechhub_core.sqlalchemy` importable. Without the extra,
+importing it raises `ImportError` naming the extra; nothing else in core imports it.
+
+| Piece | Shape |
+|---|---|
+| `settings_table(metadata)` | `gth_settings`: `scope`, `subject` (`""` for app rows), `key` (together the primary key), `value` (JSON), `updated_at` |
+| `role_grants_table(metadata)` | `gth_role_grants`: `subject`, `role` (together the primary key), `granted_at` |
+| `SQLAlchemySettingsStore(table, ...)` | A `SettingsStore` over `gth_settings` |
+| `SQLAlchemyGrantStore(table, ...)` | A `GrantStore` over `gth_role_grants` |
+
+Both stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
+`async_sessionmaker`, for the async ones), or both. Calling a method whose factory wasn't given raises
+`RuntimeError`. Each call runs in its own transaction.
+
+```python
+import sqlalchemy as sa
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from greentechhub_core.permissions import RoleResolver
+from greentechhub_core.settings import Settings, SettingsRegistry
+from greentechhub_core.sqlalchemy import (
+    SQLAlchemyGrantStore, SQLAlchemySettingsStore, role_grants_table, settings_table,
+)
+
+# models.py — on the metadata your Alembic env.py already uses
+settings_rows = settings_table(Base.metadata)
+grant_rows = role_grants_table(Base.metadata)
+
+# startup
+Session = async_sessionmaker(create_async_engine(DATABASE_URL))
+grants = SQLAlchemyGrantStore(grant_rows, async_session_factory=Session)
+resolver = RoleResolver(roles=ROLES, group_roles=GROUP_ROLES, bootstrap=BOOTSTRAP, grants=grants)
+settings = Settings(registry, SQLAlchemySettingsStore(settings_rows, async_session_factory=Session))
+```
+
+**Alembic recipe.** The tables are ordinary `Table`s on your metadata, so migrations are the usual autogenerate:
+
+1. Call `settings_table`/`role_grants_table` in a module your `env.py` imports before it reads `target_metadata`
+   (calling them again on the same metadata returns the existing table, so the app and `env.py` can both call them).
+2. `alembic revision --autogenerate -m "gth settings and role grants"` detects both tables.
+3. Review the revision and `alembic upgrade head`.
+
+- `value` is SQLAlchemy's `JSON` type, so bools, ints and strings read back with their types on SQLite and
+  PostgreSQL alike.
+- `set` is an update, then an insert if no row matched, which works on every backend. A concurrent insert of the
+  same row is retried once as an update. A concurrent `assign` of the same grant is treated as already assigned.
+- Both stores pass `SettingsStoreContract` / `GrantStoreContract`, run against SQLite with sync and `aiosqlite`
+  sessions.

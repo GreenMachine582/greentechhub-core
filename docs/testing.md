@@ -14,4 +14,5 @@
       @pytest.fixture
       def valid_raw_context(self): return RawAuthContext(...)
   ```
+- The SQLAlchemy stores run the same `SettingsStoreContract` and `GrantStoreContract` against a SQLite file through both a sync session and an `aiosqlite` async one; `.[dev]` installs SQLAlchemy and aiosqlite for that.
 - GitHub Actions: lint (ruff) + test, same pattern as the rest of the ecosystem.
