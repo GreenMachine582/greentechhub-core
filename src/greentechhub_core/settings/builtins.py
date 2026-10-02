@@ -11,9 +11,14 @@ them across every service (theme, density, motion, sidebar, dates, numbers,
 tables) without per-service wiring. USER_PREFERENCES may grow as more shared
 keys are added; a service that wants a fixed set registers the individual
 constants instead.
+
+landing_page_setting is a factory rather than a constant, and isn't in
+USER_PREFERENCES: its choices are the service's own pages, so the service
+builds it and registers it alongside the rest.
 """
 
 import zoneinfo
+from collections.abc import Iterable, Mapping
 
 from greentechhub_core.settings.definitions import Setting, SettingScope, SettingType
 
@@ -132,3 +137,34 @@ USER_PREFERENCES: tuple[Setting, ...] = (
     NUMBER_FORMAT,
     TIME_FORMAT,
 )
+
+LANDING_PAGE_KEY = "ui.landing_page"
+"""The key landing_page_setting registers under, for an adapter's redirect
+(or anything else) to read."""
+
+
+def landing_page_setting(
+    choices: Mapping[str, str] | Iterable[str] | Iterable[tuple[str, str]],
+    *,
+    default: str,
+    label: str = "Landing page",
+    help_text: str = "The page you see after signing in.",
+) -> Setting:
+    """A USER choice setting for the page each person lands on, keyed
+    LANDING_PAGE_KEY in the Navigation group.
+
+    `choices` are the service's own pages, url → label, in any form Setting
+    accepts (a mapping, (url, label) pairs, or bare urls). `default` must be
+    one of them; Setting raises ValueError otherwise, or for empty choices.
+    Acting on the value (redirecting) is the adapter's or service's job.
+    """
+    return Setting(
+        key=LANDING_PAGE_KEY,
+        type=SettingType.CHOICE,
+        default=default,
+        scope=SettingScope.USER,
+        label=label,
+        help_text=help_text,
+        choices=choices,
+        group="Navigation",
+    )

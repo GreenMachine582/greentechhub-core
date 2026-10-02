@@ -9,7 +9,7 @@
 
 ## 🎯 Objective
 
-The framework-independent foundation every GreenTechHub-ecosystem service — FastAPI or Django, web app or CLI/worker — builds on: configuration, logging, identity and permission contracts, health-check logic, query/pagination/filtering contracts, an event bus abstraction, feature flags, observability setup, and shared security primitives. It contains no `import fastapi` or `import django` anywhere, and no database, cache, or deployment setup of its own — it's an installable library, not a service. SQLAlchemy is not a required dependency: the SQLAlchemy settings and grant stores live behind the optional `[sqlalchemy]` extra.
+The framework-independent foundation every GreenTechHub-ecosystem service — FastAPI or Django, web app or CLI/worker — builds on: configuration, logging, identity and permission contracts, health-check logic, query/pagination/filtering contracts, an event bus abstraction, feature flags, observability setup, and shared security primitives. It contains no `import fastapi` or `import django` anywhere, and no database, cache, or deployment setup of its own — it's an installable library, not a service. SQLAlchemy is not a required dependency: the SQLAlchemy settings and grant stores live behind the optional `[sqlalchemy]` extra, and the Fernet cipher for secret settings behind `[crypto]`.
 
 ## 🧩 Scope
 
@@ -19,7 +19,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `logging` | Structured (JSON) logging setup, request-ID-aware formatters, shaped for the homelab's Loki/Alloy pipeline                 | [docs/architecture.md](docs/architecture.md) |
 | `identity` | Framework-independent identity model — the centrepiece of this package                                                     | [docs/identity.md](docs/identity.md) |
 | `permissions` | Permission-check primitives, typed permission-catalogue helpers, and opt-in role resolution (`RoleResolver` from groups/bootstrap/`GrantStore`) | [docs/permissions.md](docs/permissions.md) |
-| `settings` | Opt-in runtime settings: `Setting` definitions, a `SettingsRegistry` with validate/coerce, user → app → env → default resolution, shared `builtins.USER_PREFERENCES`, in-memory/JSON `SettingsStore`s and the `Settings` facade | [docs/settings.md](docs/settings.md) |
+| `settings` | Opt-in runtime settings: `Setting` definitions, a `SettingsRegistry` with validate/coerce, user → app → env → default resolution, shared `builtins.USER_PREFERENCES` and the `landing_page_setting` factory, in-memory/JSON `SettingsStore`s, the `Settings` facade, and secret settings (encrypted at rest, masked on read; `FernetCipher` behind the `[crypto]` extra) | [docs/settings.md](docs/settings.md) |
 | `events` | `publish()`/`subscribe()` + typed event definitions — logs events today, Redis pub/sub later                               | [docs/events.md](docs/events.md) |
 | `feature_flags` | A `FeatureFlagProvider` interface; env/static-file-backed implementation to start                                          | [docs/modules.md](docs/modules.md#feature-flags) |
 | `health` | Check primitives + a `HealthResult` type — `check_disk`/`check_database`/`check_external` ship today; `check_redis` lands when Redis is deployed for some other reason | [docs/health.md](docs/health.md) |

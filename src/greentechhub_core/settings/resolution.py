@@ -43,7 +43,8 @@ def read_env_overrides(
 ) -> dict[str, SettingValue]:
     """Coerce every env override present for `settings`, keyed by setting
     key. `environ` defaults to os.environ. Raises ValueError naming the env
-    var when a value doesn't coerce.
+    var when a value doesn't coerce, or when one is set for a secret
+    setting: secrets are only ever stored encrypted, never read from env.
     """
     environ = os.environ if environ is None else environ
     overrides: dict[str, SettingValue] = {}
@@ -51,6 +52,8 @@ def read_env_overrides(
         name = env_var_name(setting.key, prefix)
         if name not in environ:
             continue
+        if setting.secret:
+            raise ValueError(f"{name}: {setting.key!r} is a secret setting and can't come from env")
         try:
             overrides[setting.key] = setting.coerce(environ[name])
         except ValueError as exc:

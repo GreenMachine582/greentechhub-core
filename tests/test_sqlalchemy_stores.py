@@ -122,3 +122,36 @@ def test_settings_and_role_resolver_run_on_the_sqlalchemy_stores(db):
 
     asyncio.run(exercise())
     assert settings.get_sync("ui.page_size") == 50
+
+
+def test_secret_settings_are_ciphertext_in_the_table(db):
+    from greentechhub_core.settings import SECRET_SET, Setting, SettingType
+    from greentechhub_core.settings.crypto import FernetCipher
+
+    password = Setting(
+        key="email.app_password",
+        type=SettingType.STR,
+        default="",
+        scope=SettingScope.USER,
+        label="App password",
+        secret=True,
+    )
+    store = SQLAlchemySettingsStore(db["settings"], **_factories(db))
+    settings = Settings(
+        SettingsRegistry([password]),
+        store,
+        env={},
+        cipher=FernetCipher(FernetCipher.generate_key()),
+    )
+    alice = Identity(subject="alice", username="alice", email=None, groups=[], claims={})
+
+    async def exercise() -> tuple:
+        await settings.set_user(alice, "email.app_password", "hunter2")
+        return await settings.get("email.app_password", alice), await settings.get_secret(
+            "email.app_password", alice
+        )
+
+    assert asyncio.run(exercise()) == (SECRET_SET, "hunter2")
+    with db["session_factory"]() as session:
+        rows = [str(v) for v in session.execute(sa.select(db["settings"].c.value)).scalars()]
+    assert rows and not any("hunter2" in v for v in rows)

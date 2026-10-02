@@ -6,6 +6,10 @@ Reads resolve user → app → env → default (resolution.py). Writes validate
 against the registry before anything reaches the store, so a store only
 ever holds values that were valid when written.
 
+Secret settings (Setting.secret) are encrypted with the facade's
+SecretCipher before the store, so stores only see opaque strings; reads
+give the SECRET_SET marker (or None) and only get_secret decrypts.
+
 This module doesn't import permissions/ or identity/: `identity` is anything
 with a `subject`, and `granted` is any collection of permission strings,
 e.g. the frozenset RoleResolver.granted returns.
@@ -17,7 +21,12 @@ from typing import Protocol
 from greentechhub_core.settings.definitions import Setting, SettingScope, SettingValue
 from greentechhub_core.settings.registry import SettingsRegistry
 from greentechhub_core.settings.resolution import DEFAULT_ENV_PREFIX
+from greentechhub_core.settings.secrets import SECRET_SET, SecretCipher, SecretSet
 from greentechhub_core.settings.store import SettingsStore
+
+ReadValue = SettingValue | SecretSet | None
+"""What effective()/get() give per setting: its value, or for a secret
+setting SECRET_SET when one is stored and None when not."""
 
 
 class SubjectLike(Protocol):
@@ -54,6 +63,9 @@ class Settings:
             `registry.env_overrides(prefix=env_prefix)`, read once here, so
             a malformed env value fails at startup.
         env_prefix: the env var prefix when `env` isn't given.
+        cipher: the SecretCipher for secret settings, e.g.
+            settings.crypto.FernetCipher. Required when the registry holds
+            any secret setting.
 
     Every method comes as an async one plus a `_sync` twin, calling the
     store's matching pair.
@@ -71,10 +83,19 @@ class Settings:
     admins. `granted` is required either way so every app write says what
     the caller holds.
 
+    Secrets: writes encrypt the value before the store (an empty one raises
+    ValueError; reset to remove it). Reads give SECRET_SET instead of the
+    value, or None when nothing is stored. `get_secret(key, identity)`
+    returns the plaintext (the user value, else the app value, else None)
+    for server code, raising SecretDecryptError when the cipher can't
+    decrypt it.
+
     Errors: an unknown key raises KeyError, an invalid value ValueError
     (from Setting.validate; use `registry.coerce` first for form strings),
     set_user on an APP setting ValueError, and a denied write
-    SettingPermissionError.
+    SettingPermissionError. Construction raises ValueError when the
+    registry holds a secret setting and there's no cipher, or `env` sets a
+    secret setting.
     """
 
     def __init__(
@@ -84,34 +105,57 @@ class Settings:
         *,
         env: Mapping[str, SettingValue] | None = None,
         env_prefix: str = DEFAULT_ENV_PREFIX,
+        cipher: SecretCipher | None = None,
     ) -> None:
         self.registry = registry
         self.store = store
+        self._secrets = frozenset(s.key for s in registry if s.secret)
+        if self._secrets and cipher is None:
+            raise ValueError(f"secret settings {sorted(self._secrets)} need a cipher")
+        self._cipher = cipher
         self._env = dict(env) if env is not None else registry.env_overrides(prefix=env_prefix)
+        if leaked := self._secrets & self._env.keys():
+            raise ValueError(f"secret settings {sorted(leaked)} can't come from env")
 
     # reads
 
-    def effective_sync(self, identity: SubjectLike | None = None) -> dict[str, SettingValue]:
+    def effective_sync(self, identity: SubjectLike | None = None) -> dict[str, ReadValue]:
         app = self.store.get_many_sync(SettingScope.APP, None)
         user = self._user_values_sync(identity)
-        return self.registry.resolve_all(user=user, app=app, env=self._env)
+        return self._mask_all(self.registry.resolve_all(user=user, app=app, env=self._env))
 
-    async def effective(self, identity: SubjectLike | None = None) -> dict[str, SettingValue]:
+    async def effective(self, identity: SubjectLike | None = None) -> dict[str, ReadValue]:
         app = await self.store.get_many(SettingScope.APP, None)
         user = await self._user_values(identity)
-        return self.registry.resolve_all(user=user, app=app, env=self._env)
+        return self._mask_all(self.registry.resolve_all(user=user, app=app, env=self._env))
 
-    def get_sync(self, key: str, identity: SubjectLike | None = None) -> SettingValue:
+    def get_sync(self, key: str, identity: SubjectLike | None = None) -> ReadValue:
         setting = self.registry.get(key)
         app = self.store.get_many_sync(SettingScope.APP, None)
         user = self._user_values_sync(identity) if setting.scope is SettingScope.USER else None
-        return self.registry.resolve(key, user=user, app=app, env=self._env)
+        return _mask(setting, self.registry.resolve(key, user=user, app=app, env=self._env))
 
-    async def get(self, key: str, identity: SubjectLike | None = None) -> SettingValue:
+    async def get(self, key: str, identity: SubjectLike | None = None) -> ReadValue:
         setting = self.registry.get(key)
         app = await self.store.get_many(SettingScope.APP, None)
         user = await self._user_values(identity) if setting.scope is SettingScope.USER else None
-        return self.registry.resolve(key, user=user, app=app, env=self._env)
+        return _mask(setting, self.registry.resolve(key, user=user, app=app, env=self._env))
+
+    def get_secret_sync(self, key: str, identity: SubjectLike | None = None) -> str | None:
+        """A secret setting's plaintext: the user's value, else the app
+        value, else None. For server code; never hand it to a template.
+        ValueError for a setting that isn't secret.
+        """
+        setting = self._secret_setting(key)
+        app = self.store.get_many_sync(SettingScope.APP, None)
+        user = self._user_values_sync(identity) if setting.scope is SettingScope.USER else None
+        return self._decrypt(self.registry.resolve(key, user=user, app=app))
+
+    async def get_secret(self, key: str, identity: SubjectLike | None = None) -> str | None:
+        setting = self._secret_setting(key)
+        app = await self.store.get_many(SettingScope.APP, None)
+        user = await self._user_values(identity) if setting.scope is SettingScope.USER else None
+        return self._decrypt(self.registry.resolve(key, user=user, app=app))
 
     def _user_values_sync(self, identity: SubjectLike | None) -> dict[str, SettingValue] | None:
         if identity is None:
@@ -122,6 +166,31 @@ class Settings:
         if identity is None:
             return None
         return await self.store.get_many(SettingScope.USER, identity.subject)
+
+    # secrets
+
+    def _mask_all(self, values: dict[str, SettingValue]) -> dict[str, ReadValue]:
+        return {key: _mask(self.registry.get(key), value) for key, value in values.items()}
+
+    def _secret_setting(self, key: str) -> Setting:
+        setting = self.registry.get(key)
+        if not setting.secret:
+            raise ValueError(f"setting {key!r} isn't secret; use get")
+        return setting
+
+    def _decrypt(self, stored: SettingValue) -> str | None:
+        # A secret resolves to its ciphertext, or "" (its default) when unset.
+        if not stored:
+            return None
+        return self._cipher.decrypt(str(stored))
+
+    def _to_store(self, setting: Setting, value: object) -> SettingValue:
+        value = setting.validate(value)
+        if not setting.secret:
+            return value
+        if not value:
+            raise ValueError(f"setting {setting.key!r}: a secret can't be empty; reset it instead")
+        return self._cipher.encrypt(str(value))
 
     # user writes
 
@@ -134,11 +203,11 @@ class Settings:
         return setting
 
     def set_user_sync(self, identity: SubjectLike | None, key: str, value: object) -> None:
-        value = self._user_setting(identity, key).validate(value)
+        value = self._to_store(self._user_setting(identity, key), value)
         self.store.set_sync(SettingScope.USER, identity.subject, key, value)
 
     async def set_user(self, identity: SubjectLike | None, key: str, value: object) -> None:
-        value = self._user_setting(identity, key).validate(value)
+        value = self._to_store(self._user_setting(identity, key), value)
         await self.store.set(SettingScope.USER, identity.subject, key, value)
 
     def reset_user_sync(self, identity: SubjectLike | None, key: str) -> None:
@@ -159,11 +228,11 @@ class Settings:
         return setting
 
     def set_app_sync(self, key: str, value: object, *, granted: Collection[str]) -> None:
-        value = self._app_setting(key, granted).validate(value)
+        value = self._to_store(self._app_setting(key, granted), value)
         self.store.set_sync(SettingScope.APP, None, key, value)
 
     async def set_app(self, key: str, value: object, *, granted: Collection[str]) -> None:
-        value = self._app_setting(key, granted).validate(value)
+        value = self._to_store(self._app_setting(key, granted), value)
         await self.store.set(SettingScope.APP, None, key, value)
 
     def reset_app_sync(self, key: str, *, granted: Collection[str]) -> None:
@@ -174,3 +243,9 @@ class Settings:
     async def reset_app(self, key: str, *, granted: Collection[str]) -> None:
         self._app_setting(key, granted)
         await self.store.delete(SettingScope.APP, None, key)
+
+
+def _mask(setting: Setting, value: SettingValue) -> ReadValue:
+    if not setting.secret:
+        return value
+    return SECRET_SET if value else None

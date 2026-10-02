@@ -5,6 +5,7 @@ from greentechhub_core.settings import SettingScope, SettingsRegistry, SettingTy
 from greentechhub_core.settings.builtins import (
     DATE_FORMAT,
     DENSITY,
+    LANDING_PAGE_KEY,
     MOTION,
     NUMBER_FORMAT,
     PAGE_SIZE,
@@ -13,6 +14,7 @@ from greentechhub_core.settings.builtins import (
     TIME_FORMAT,
     TIMEZONE,
     USER_PREFERENCES,
+    landing_page_setting,
 )
 
 
@@ -105,3 +107,50 @@ def test_display_builtins_match_the_documented_shape(setting, key, values, defau
         assert setting.coerce(value) == value
     with pytest.raises(ValueError):
         setting.validate("not-a-choice")
+
+
+# landing page
+
+PAGES = {"/": "Dashboard", "/reports": "Reports"}
+
+
+def test_landing_page_setting_has_the_documented_shape():
+    setting = landing_page_setting(PAGES, default="/")
+    assert setting.key == LANDING_PAGE_KEY == "ui.landing_page"
+    assert setting.type is SettingType.CHOICE
+    assert setting.scope is SettingScope.USER
+    assert setting.group == "Navigation"
+    assert setting.choices == (("/", "Dashboard"), ("/reports", "Reports"))
+    assert setting.default == "/"
+    assert (setting.label, setting.help_text) == (
+        "Landing page",
+        "The page you see after signing in.",
+    )
+
+
+def test_landing_page_setting_label_and_help_text_override():
+    setting = landing_page_setting(PAGES, default="/reports", label="Home", help_text="")
+    assert (setting.label, setting.help_text, setting.default) == ("Home", "", "/reports")
+
+
+@pytest.mark.parametrize(
+    "choices",
+    [PAGES, [("/", "Dashboard"), ("/reports", "Reports")], ["/", "/reports"]],
+)
+def test_landing_page_setting_takes_every_choices_form(choices):
+    assert landing_page_setting(choices, default="/").choice_values == ("/", "/reports")
+
+
+@pytest.mark.parametrize(("choices", "default"), [(PAGES, "/admin"), ({}, "/")])
+def test_landing_page_setting_rejects_a_default_outside_the_choices(choices, default):
+    with pytest.raises(ValueError):
+        landing_page_setting(choices, default=default)
+
+
+def test_landing_page_setting_is_opt_in_and_registers_with_the_preferences():
+    assert LANDING_PAGE_KEY not in {s.key for s in USER_PREFERENCES}
+    registry = SettingsRegistry([*USER_PREFERENCES, landing_page_setting(PAGES, default="/")])
+    assert registry.resolve(LANDING_PAGE_KEY) == "/"
+    assert registry.resolve(LANDING_PAGE_KEY, user={LANDING_PAGE_KEY: "/reports"}) == "/reports"
+    assert registry.resolve(LANDING_PAGE_KEY, user={LANDING_PAGE_KEY: "/gone"}) == "/"
+    assert registry.coerce(LANDING_PAGE_KEY, "/reports") == "/reports"
