@@ -3,8 +3,8 @@
 # ⚙️ Settings and Role Resolution
 
 > **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
-> the `Settings` facade, secret settings and the SQLAlchemy storage tables have all shipped. The adapter work that builds on them is
-> tracked in [TODO.md](../TODO.md#settings--permissions) and the fastapi/ui repos.
+> the `Settings` facade, secret settings, the landing-page factory and the SQLAlchemy storage tables have all shipped.
+> The adapter work that builds on them is tracked in the fastapi and ui repos' TODOs.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
 
@@ -125,16 +125,27 @@ tuple (or a subset) to its own registry. All are USER settings.
   - APP-scope settings such as a currency symbol or a site banner are left to each service.
   - Per-table hidden columns stay in localStorage, because they're per page and per table rather than a shared key.
 
-### Landing page (planned)
-
-Registered as [TODO.md](../TODO.md#settings--permissions) #14.
+### Landing page (shipped)
 
 | Factory | Key | Type | Default | Values | Group |
 |---|---|---|---|---|---|
-| `landing_page_setting(choices, *, default)` | `ui.landing_page` | choice | the caller's | the service's own pages, url → label | Navigation |
+| `landing_page_setting(choices, *, default, label="Landing page", help_text=...)` | `ui.landing_page` (`LANDING_PAGE_KEY`) | choice | the caller's | the service's own pages, url → label | Navigation |
 
-It's a factory, not a constant, and isn't in `USER_PREFERENCES`, because its choices are the service's own pages.
-`Setting`'s own validation rejects a `default` that isn't one of them.
+```python
+from greentechhub_core.settings.builtins import USER_PREFERENCES, landing_page_setting
+
+registry = SettingsRegistry([
+    *USER_PREFERENCES,
+    landing_page_setting({"/": "Dashboard", "/reports": "Reports"}, default="/"),
+])
+```
+
+- It's a factory, not a constant, and isn't in `USER_PREFERENCES`, because its choices are the service's own pages.
+  `choices` takes any form `Setting` accepts: a mapping, `(url, label)` pairs, or bare urls.
+- `Setting`'s own validation rejects a `default` that isn't one of them, and empty choices. A stored page that's
+  later removed from the choices falls back to the default, like any stale choice.
+- Core only defines the setting. Acting on it (redirecting `/` or the post-login page to it) is the adapter's or
+  service's job; `LANDING_PAGE_KEY` is the key to read.
 
 ## Settings stores and facade (shipped)
 
