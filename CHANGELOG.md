@@ -5,6 +5,14 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.8.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.7.0...v0.8.0) (2026-10-02)
+
+
+### Features
+
+* **settings:** landing_page_setting factory ([#23](https://github.com/GreenMachine582/greentechhub-core/issues/23)) ([cb626e4](https://github.com/GreenMachine582/greentechhub-core/commit/cb626e47881ad488af0760cd4d0807fd08747203))
+* **settings:** secret settings ([#22](https://github.com/GreenMachine582/greentechhub-core/issues/22)) ([5d4bc60](https://github.com/GreenMachine582/greentechhub-core/commit/5d4bc60928219be965347c8d0802ac2c83c55289))
+
 ## [0.7.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.6.0...v0.7.0) (2026-10-01)
 
 
