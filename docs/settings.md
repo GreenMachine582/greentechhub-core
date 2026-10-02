@@ -3,7 +3,7 @@
 # ⚙️ Settings and Role Resolution
 
 > **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
-> the `Settings` facade and the SQLAlchemy storage tables have all shipped. The adapter work that builds on them is
+> the `Settings` facade, secret settings and the SQLAlchemy storage tables have all shipped. The adapter work that builds on them is
 > tracked in [TODO.md](../TODO.md#settings--permissions) and the fastapi/ui repos.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
@@ -19,7 +19,7 @@ They also need a way to decide *who counts as an admin*. `permissions/` has the 
 - **Opt-in.**
   - Nothing is auto-registered.
   - Built-in settings are an exported tuple that a service passes in itself.
-  - The SQLAlchemy stores are only importable with the `[sqlalchemy]` extra.
+  - The SQLAlchemy stores are only importable with the `[sqlalchemy]` extra, and `FernetCipher` with `[crypto]`.
   - Adapters wire things up only when the service calls their `register_*` function.
 - **Core-first.**
   - Everything works from this package alone, with sync and async APIs, so a bot, CLI or Django service can use it
@@ -57,7 +57,7 @@ The union covers every way a person can be given roles:
 
 | Piece | Shape |
 |---|---|
-| `Setting` | Frozen definition: `key`, `type` (bool/int/str/choice), `default`, `scope`, `label`, `help_text`, `choices`, `min`/`max`, `group`, `edit_permission`; `validate(value)` and `coerce(raw)` |
+| `Setting` | Frozen definition: `key`, `type` (bool/int/str/choice), `default`, `scope`, `label`, `help_text`, `choices`, `min`/`max`, `group`, `edit_permission`, `secret`; `validate(value)` and `coerce(raw)` |
 | `SettingScope` | `APP` (one value per service) or `USER` (one per person; the app value is the admin-set default) |
 | `SettingsRegistry` | Registration (duplicate keys fail fast), lookup, `validate`/`coerce` by key, `env_overrides`, `resolve`/`resolve_all` |
 | `resolve` | Pure function over user, app and env mappings; no I/O |
@@ -93,7 +93,7 @@ then the definition's default. An APP setting uses the same chain without the us
   resolution falls through to the next layer. This matches `RoleResolver` ignoring stale grant rows.
 - **Env overrides** are read from `SETTING_` + the key uppercased, with `.` → `__`: `ui.page_size` comes from
   `SETTING_UI__PAGE_SIZE`. The prefix is overridable. `env_overrides()` raises naming the env var when a value
-  doesn't coerce, so read it once at startup.
+  doesn't coerce, or when one is set for a [secret setting](#secret-settings-shipped), so read it once at startup.
 
 **Opt-in built-ins** live in `settings.builtins.USER_PREFERENCES`. Nothing registers them. A service passes the
 tuple (or a subset) to its own registry. All are USER settings.
@@ -178,6 +178,58 @@ await settings.set_app("site.banner", "Down at 5pm", granted=granted)
   `ValueError` and is never overwritten.
 - `settings/` imports neither `permissions/` nor `identity/`: `identity` is anything with a `subject`, and `granted`
   is any collection of permission strings.
+
+## Secret settings (shipped)
+
+Some settings are credentials: an email app password, an API token. `Setting(..., secret=True)` keeps one encrypted at
+rest and out of every read except one explicit call.
+
+```python
+from greentechhub_core.settings import SECRET_SET, Setting, Settings, SettingScope, SettingType
+from greentechhub_core.settings.crypto import FernetCipher   # the [crypto] extra
+
+APP_PASSWORD = Setting(
+    key="email.app_password", type=SettingType.STR, default="", scope=SettingScope.USER,
+    label="App password", group="Email sync", secret=True,
+)
+settings = Settings(registry, store, cipher=FernetCipher(config.settings_cipher_key))
+
+await settings.set_user(identity, "email.app_password", "abcd efgh")      # encrypted before the store
+await settings.get("email.app_password", identity)                        # SECRET_SET (None when unset)
+await settings.get_secret("email.app_password", identity)                 # "abcd efgh", for server code only
+await settings.reset_user(identity, "email.app_password")                 # removes it
+```
+
+| Piece | Shape |
+|---|---|
+| `Setting.secret` | `False` by default. Only a `str` setting with `default=""` can be secret, otherwise `ValueError` at definition time |
+| `SecretCipher` | Protocol: `encrypt(plaintext: str) -> str`, `decrypt(token: str) -> str` |
+| `FernetCipher(key)` | The shipped cipher, in `greentechhub_core.settings.crypto` behind the `[crypto]` extra (`cryptography`). `FernetCipher.generate_key()` makes a key |
+| `SECRET_SET` | The marker reads return for a stored secret. Truthy, equal only to itself, and renders as `••••••••` |
+| `SecretDecryptError` | A `ValueError`: the stored value doesn't decrypt with this cipher (the key changed, or the value was tampered with) |
+| `Settings(..., cipher=)` | Required when the registry holds any secret setting |
+| `get_secret(key, identity=None)` | The plaintext: the user value, else the app value, else `None`. Also `get_secret_sync` |
+
+- **Fails fast.** A registry with a secret setting and no `cipher` raises `ValueError` naming the keys when `Settings`
+  is built. A malformed Fernet key raises `ValueError` from `FernetCipher(key)`.
+- **Writes** (`set_user`/`set_app`) validate the plaintext as a `str`, then store `cipher.encrypt(value)`. An empty
+  value raises `ValueError`; use `reset_user`/`reset_app` to remove a secret. `edit_permission` applies as usual.
+- **Reads.** `effective()` and `get()` give `SECRET_SET` when a value is stored (user or app layer) and `None` when
+  not, so a template or form can say "saved" without ever holding the value. Test with `value is SECRET_SET`.
+- **`get_secret`** raises `ValueError` for a setting that isn't secret, and `SecretDecryptError` when the stored value
+  doesn't decrypt. `identity=None` skips the user layer, as for `get`.
+- **No env overrides.** `read_env_overrides` raises `ValueError` naming the env var when one is set for a secret
+  setting, and `Settings(env=...)` rejects a mapping that sets one. A secret only ever comes from an encrypted write.
+- **Stores are unchanged.** They see an opaque string, so every `SettingsStore` (and `SettingsStoreContract`) works
+  as-is: in memory, the JSON file and the `gth_settings` table all hold ciphertext.
+
+**What it protects.** The value is encrypted at rest (a database dump, a backup, the JSON file) and never reaches a
+template. The key is config, not a setting: keep it in an env var or a secret manager, outside the settings store, and
+pass it to `FernetCipher` at startup. Anyone with the key and the store can decrypt.
+
+**Changing the key** isn't handled: values written under the old key raise `SecretDecryptError` from `get_secret`
+(reads still show `SECRET_SET`). Have people re-enter them, or decrypt and re-`set` each value with both ciphers in a
+one-off script.
 
 ## Storage tables (shipped, `[sqlalchemy]` extra)
 
