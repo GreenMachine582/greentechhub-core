@@ -14,6 +14,15 @@
 ### v0.6 — Background, observability
 - [ ] `observability` — the full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to ([docs/modules.md](docs/modules.md#observability)). `observability.resource`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) has shipped ahead of the rest — the Loki/Alloy JSON logging pipeline wants the same fields today (`logging.setup.configure_logging`'s new `service`/`version` parameters), independent of OTel existing at all.
 
+### From the PyFinBot review
+Generic pieces PyFinBot built for itself, to move here so it can delete them:
+- [ ] An `ApplicationError` with an explicit HTTP status (PyFinBot's `StatusError`: 400/502/503 with its own
+  `code`), which greentechhub-fastapi's handlers answer at that status
+- [ ] Site banner setting definitions (message + tone) for greentechhub-fastapi's opt-in site banner
+- [ ] `sqlalchemy`: `paginate(session, stmt, offset, limit)` (a count plus one page) and a sort string
+  (`"-date,id"`) → `order_by` against an allow-list. From PyFinBot's `web/paging.py` and `core/sorting.py`;
+  its filter compat layer (`core/sa_filters_compat.py`) could map onto core's `query.Filter` in the same PR
+
 ### v1.0 — Validated in production
 - [ ] Both adapter packages consuming this package
 - [ ] At least one FastAPI service consuming it in production
