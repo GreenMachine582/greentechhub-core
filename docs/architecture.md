@@ -48,7 +48,9 @@ greentechhub-core/
 │   │   ├── resolution.py          # user → app → env → default; env overrides (SETTING_UI__PAGE_SIZE)
 │   │   ├── builtins.py            # opt-in USER_PREFERENCES: theme, density, motion, sidebar, timezone, date/number/time formats, page size
 │   │   ├── store.py               # SettingsStore protocol + InMemorySettingsStore + JsonFileSettingsStore
-│   │   └── service.py             # Settings facade: effective/get, set_user, set_app (edit_permission check)
+│   │   ├── secrets.py             # SecretCipher protocol, SECRET_SET marker, SecretDecryptError
+│   │   ├── crypto.py              # FernetCipher — optional `[crypto]` extra
+│   │   └── service.py             # Settings facade: effective/get, set_user, set_app (edit_permission check), get_secret
 │   ├── events/
 │   │   ├── publish.py
 │   │   ├── subscribe.py

@@ -82,10 +82,16 @@ class Setting:
         edit_permission: the permission string needed to change the
             app-level value. `None` means the definition asks for none;
             the Settings facade (a later item) enforces it.
+        secret: the value is a credential (an app password, an API token).
+            STR only, with default "": the Settings facade encrypts it
+            before the store, never returns it from effective()/get() (only
+            the SECRET_SET marker) and never reads it from env — see
+            docs/settings.md#secret-settings-shipped.
 
     Construction fails fast with ValueError on a malformed key, choices or
-    bounds on the wrong type, empty or duplicate choices, min > max, or a
-    default that doesn't validate.
+    bounds on the wrong type, empty or duplicate choices, min > max, a
+    default that doesn't validate, or a secret that isn't a str setting
+    with default "".
     """
 
     key: str
@@ -99,6 +105,7 @@ class Setting:
     max: int | None = None
     group: str = ""
     edit_permission: str | None = None
+    secret: bool = False
 
     def __post_init__(self) -> None:
         if not _KEY_PATTERN.fullmatch(self.key):
@@ -121,6 +128,10 @@ class Setting:
             raise ValueError(f"setting {self.key!r}: only an int setting takes min/max")
         if self.min is not None and self.max is not None and self.min > self.max:
             raise ValueError(f"setting {self.key!r}: min {self.min} is above max {self.max}")
+        if self.secret and self.type is not SettingType.STR:
+            raise ValueError(f"setting {self.key!r}: only a str setting can be secret")
+        if self.secret and self.default != "":
+            raise ValueError(f"setting {self.key!r}: a secret setting's default must be ''")
         try:
             self.validate(self.default)
         except ValueError as exc:
