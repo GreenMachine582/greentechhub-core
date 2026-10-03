@@ -1,6 +1,6 @@
 [← Back to README](../README.md)
 
-# 🧩 Feature Flags, Observability, Security, Proxy, Background, CLI
+# 🧩 Feature Flags, Observability, Security, Proxy, Errors, Background, CLI
 
 The smaller modules that don't warrant their own doc yet — see [docs/identity.md](identity.md), [docs/permissions.md](permissions.md), [docs/settings.md](settings.md), [docs/events.md](events.md), [docs/query.md](query.md), and [docs/health.md](health.md) for the higher-detail ones.
 
@@ -21,6 +21,19 @@ The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until th
 ## Proxy
 
 Pure `X-Forwarded-*` parsing/validation against a trusted-proxy allowlist, framework-independent by design — header-dict-in, validated-client-info-out. Middleware wiring itself is adapter-layer.
+
+## Errors
+
+`types/errors.py`: `ApplicationError` (`message`, a stable machine-readable `code`, optional `details`) and its HTTP-shaped
+subclasses — `BadRequestError` (`bad_request`, 400 territory: malformed input that isn't field validation, such as an
+unparseable identifier), `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`.
+An adapter's handlers turn them into the `{code, message, details}` envelope; core never builds a response.
+
+`status_code` is an optional HTTP status hint for errors whose status is only known at runtime — an upstream
+service's 502 vs 503, an upload's 413 vs 422: `ApplicationError("Mailbox unreachable", code="email_sync_failed",
+status_code=503)`. `None` (the default) leaves the adapter's type → status mapping in charge; when set, an adapter
+uses it ahead of that mapping. A subclass can fix one as a class attribute and a caller can still override it,
+like `code`.
 
 ## Background tasks
 

@@ -42,15 +42,39 @@ class ApplicationError(Exception):
             default) when there's nothing more to add beyond code/message.
             Typed Any: its shape is entirely caller/call-site-defined, the
             same rationale as Filter.value in query/types.py.
+        status_code: an optional HTTP status *hint* for adapters, for an
+            error whose status is only known at runtime (an upstream
+            service's 502 vs 503, an upload's 413 vs 422). None (the
+            default) leaves the adapter's own type -> status mapping in
+            charge; set, an adapter uses it ahead of that mapping. Core still
+            builds no response — this is data, like `code`. A subclass may
+            set it as a class attribute; a caller may override it
+            per-instance via the constructor, as with `code`.
     """
 
     code: str = "application_error"
+    status_code: int | None = None
 
-    def __init__(self, message: str, *, code: str | None = None, details: Any = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        details: Any = None,
+        status_code: int | None = None,
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.code = code if code is not None else self.code
         self.details = details
+        self.status_code = status_code if status_code is not None else self.status_code
+
+
+class BadRequestError(ApplicationError):
+    """The request is malformed in a way that isn't field-level validation,
+    e.g. an unparseable identifier or filter (HTTP 400 territory)."""
+
+    code = "bad_request"
 
 
 class NotFoundError(ApplicationError):
