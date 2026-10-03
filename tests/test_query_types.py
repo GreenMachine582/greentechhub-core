@@ -2,7 +2,7 @@ import dataclasses
 
 import pytest
 
-from greentechhub_core.query import Filter, Operator, Page, PageRequest, Sort
+from greentechhub_core.query import Filter, FilterGroup, Operator, Page, PageRequest, Sort
 
 # Operator
 
@@ -30,6 +30,30 @@ def test_filter_is_frozen():
     f = Filter(field="status", operator=Operator.EQ, value="active")
     with pytest.raises(dataclasses.FrozenInstanceError):
         f.value = "inactive"
+
+
+# FilterGroup
+
+
+def test_filter_group_defaults_to_an_empty_and():
+    group = FilterGroup()
+    assert (group.mode, group.filters) == ("and", ())
+
+
+def test_filter_group_nests_and_is_frozen():
+    leaf = Filter(field="stock", operator=Operator.EQ, value=0)
+    group = FilterGroup(mode="or", filters=(leaf, FilterGroup(filters=(leaf,))))
+    assert group.filters[1].filters == (leaf,)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        group.mode = "and"
+    with pytest.raises(TypeError):
+        FilterGroup("or", ())  # keyword-only, like Filter
+
+
+def test_page_request_takes_filter_groups_alongside_filters():
+    leaf = Filter(field="stock", operator=Operator.EQ, value=0)
+    request = PageRequest(filters=[leaf, FilterGroup(mode="or", filters=(leaf,))])
+    assert isinstance(request.filters[1], FilterGroup)
 
 
 # Sort

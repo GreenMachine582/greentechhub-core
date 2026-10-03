@@ -11,11 +11,16 @@ class Filter:
     value: Any
 
 @dataclass
+class FilterGroup:                # AND / OR of filters; groups nest
+    mode: Literal["and", "or"]
+    filters: tuple[Filter | FilterGroup, ...]
+
+@dataclass
 class PageRequest:
     page: int
     size: int
     sort: list[Sort]
-    filters: list[Filter]
+    filters: list[Filter | FilterGroup]   # implicitly AND-ed
 
 @dataclass
 class Page(Generic[T]):
@@ -34,17 +39,38 @@ request stays adapter-layer (greentechhub-fastapi's `parse_sort("name,-date")` g
 doesn't depend on the framework.
 
 ```python
-from greentechhub_core.query.types import Sort
-from greentechhub_core.sqlalchemy import order_by, paginate
+from greentechhub_core.query.types import Filter, FilterGroup, Operator, Sort
+from greentechhub_core.sqlalchemy import order_by, paginate, where
 
-ALLOWED = {"name": Stock.name, "date": Stock.created, "id": Stock.id}   # what clients may sort on
+ALLOWED = {"name": Stock.name, "date": Stock.created, "id": Stock.id}   # what clients may sort/filter on
 sorts = [Sort(field="date", direction="desc")]                          # e.g. parse_sort("-date")
+filters = [                                                             # e.g. parse_filters(...)
+    Filter(field="category", operator=Operator.IN, value=["Sensor", "Cable"]),
+    FilterGroup(mode="or", filters=(
+        Filter(field="stock", operator=Operator.EQ, value=0),
+        Filter(field="name", operator=Operator.CONTAINS, value="bolt"),
+    )),
+]
 
 stmt = select(Stock).where(Stock.active)
+if (condition := where(filters, ALLOWED)) is not None:
+    stmt = stmt.where(condition)
 stmt = stmt.order_by(*order_by(sorts, ALLOWED, default=[Sort(field="id")]))
 items, total = await paginate(session, stmt, offset=(page - 1) * size, limit=size)
 ```
 
+- `where(filters, allowed)` turns `Filter`s and `FilterGroup`s (top level AND-ed) into one condition, or `None` when
+  nothing applies. Through the same kind of allow-list: a field it doesn't list is skipped, and so is a group left
+  empty. The operators:
+
+  | Operator | SQL |
+  |---|---|
+  | `eq` / `ne` / `gt` / `gte` / `lt` / `lte` | `=` `!=` `>` `>=` `<` `<=` |
+  | `in` / `not_in` | `IN` / `NOT IN` — a list; a single value is wrapped |
+  | `contains` / `starts_with` / `ends_with` | case-insensitive `ILIKE`, with `%`, `_` and `\` in the value matched literally |
+  | `is_null` | `IS NULL` for `True`, `IS NOT NULL` for `False` |
+
+  Values are compared as given. Converting query-string text (`"5"`) to the column's type is the caller's job.
 - `order_by(sorts, allowed, *, default=())` maps each `Sort` to `column.asc()` / `.desc()` through the allow-list. A
   field it doesn't list is skipped (a stale or hand-edited URL still renders); when nothing usable is left, `default`
   applies. Add a unique tie-breaker (such as `id`) so pages don't shuffle between requests.
