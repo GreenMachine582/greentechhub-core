@@ -15,6 +15,11 @@ constants instead.
 landing_page_setting is a factory rather than a constant, and isn't in
 USER_PREFERENCES: its choices are the service's own pages, so the service
 builds it and registers it alongside the rest.
+
+site_banner_settings is the same kind of factory for an APP-scope pair: a
+site-wide banner message and its tone, which an adapter turns into
+greentechhub-ui's `site_banners` (rendered above the navbar on every page).
+The edit permission is the service's own, so it's a parameter.
 """
 
 import zoneinfo
@@ -167,4 +172,56 @@ def landing_page_setting(
         help_text=help_text,
         choices=choices,
         group="Navigation",
+    )
+
+
+SITE_BANNER_KEY = "site.banner"
+"""The banner message key: empty means no banner."""
+
+SITE_BANNER_TONE_KEY = "site.banner_tone"
+"""The banner tone key: one of greentechhub-ui's gth_alert_banner tones."""
+
+SITE_BANNER_TONES = {
+    "info": "Info",
+    "warn": "Warning",
+    "bad": "Alert",
+    "good": "Success",
+    "neutral": "Neutral",
+}
+"""gth_alert_banner's tones, value → label, in the order an editor offers them."""
+
+
+def site_banner_settings(
+    *, edit_permission: str | None = None, group: str = "Site"
+) -> tuple[Setting, Setting]:
+    """An APP-scope site banner: the message (SITE_BANNER_KEY, empty for
+    none) and its tone (SITE_BANNER_TONE_KEY, default "warn").
+
+    `edit_permission` gates changing them, e.g. the service's own
+    "settings.manage"; None leaves that to the registry's caller. Showing
+    the banner (turning the resolved values into greentechhub-ui's
+    `site_banners`) is the adapter's or service's job.
+    """
+    return (
+        Setting(
+            key=SITE_BANNER_KEY,
+            type=SettingType.STR,
+            default="",
+            scope=SettingScope.APP,
+            label="Site banner",
+            help_text="Shown to everyone above the navbar, e.g. planned maintenance. "
+            "Leave empty for none.",
+            group=group,
+            edit_permission=edit_permission,
+        ),
+        Setting(
+            key=SITE_BANNER_TONE_KEY,
+            type=SettingType.CHOICE,
+            default="warn",
+            scope=SettingScope.APP,
+            label="Banner style",
+            choices=SITE_BANNER_TONES,
+            group=group,
+            edit_permission=edit_permission,
+        ),
     )
