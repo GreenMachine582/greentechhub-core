@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 
-from greentechhub_core.query.types import Filter, FilterGroup, Operator, Sort
+from greentechhub_core.query.types import Filter, FilterGroup, Operator, Page, PageRequest, Sort
 
 
 def where(
@@ -157,3 +157,55 @@ def paginate_sync(
     total = session.execute(_count(stmt)).scalar_one()
     result = session.execute(stmt.offset(offset).limit(limit))
     return (result.scalars().all() if scalars else result.all()), total
+
+
+def _page_stmt(
+    stmt: Select[Any],
+    request: PageRequest,
+    allowed: Mapping[str, Any],
+    default_sort: Iterable[Sort],
+) -> tuple[Select[Any], int]:
+    if (condition := where(request.filters, allowed)) is not None:
+        stmt = stmt.where(condition)
+    # Appended after any order already on stmt, so a service can pin a
+    # leading order and still let the request sort within it.
+    stmt = stmt.order_by(*order_by(request.sort, allowed, default=default_sort))
+    return stmt, (max(request.page, 1) - 1) * request.size
+
+
+async def page(
+    session: AsyncSession,
+    stmt: Select[Any],
+    request: PageRequest,
+    allowed: Mapping[str, Any],
+    *,
+    default_sort: Iterable[Sort] = (),
+    scalars: bool = True,
+) -> Page[Any]:
+    """A PageRequest in, a Page out: the request's filters (where), then its
+    sort (order_by, falling back to `default_sort`), then one page
+    (paginate) — what an API list route returns, e.g. via to_envelope.
+
+    `allowed` is the allow-list for both filtering and sorting. A service
+    that needs different ones calls where / order_by / paginate itself.
+    Bounding `request.size` is the adapter's job (page_params' max_size); a
+    page below 1 is read as 1.
+    """
+    stmt, offset = _page_stmt(stmt, request, allowed, default_sort)
+    items, total = await paginate(session, stmt, offset=offset, limit=request.size, scalars=scalars)
+    return Page(items=list(items), total=total, page=request.page, size=request.size)
+
+
+def page_sync(
+    session: Session,
+    stmt: Select[Any],
+    request: PageRequest,
+    allowed: Mapping[str, Any],
+    *,
+    default_sort: Iterable[Sort] = (),
+    scalars: bool = True,
+) -> Page[Any]:
+    """page() for a sync Session."""
+    stmt, offset = _page_stmt(stmt, request, allowed, default_sort)
+    items, total = paginate_sync(session, stmt, offset=offset, limit=request.size, scalars=scalars)
+    return Page(items=list(items), total=total, page=request.page, size=request.size)

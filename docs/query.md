@@ -35,8 +35,28 @@ class Page(Generic[T]):
 ## SQLAlchemy
 
 With the `[sqlalchemy]` extra, `greentechhub_core.sqlalchemy` applies these types to a service's own select. Parsing the
-request stays adapter-layer (greentechhub-fastapi's `parse_sort("name,-date")` gives the `Sort`s); the database work
-doesn't depend on the framework.
+request stays adapter-layer (greentechhub-fastapi's `page_params` builds the `PageRequest`); the database work doesn't
+depend on the framework.
+
+The one-call path is `page()`: a `PageRequest` in, a `Page` out.
+
+```python
+from greentechhub_core.query import Sort, to_envelope
+from greentechhub_core.sqlalchemy import page
+
+ALLOWED = {"name": Stock.name, "date": Stock.created, "id": Stock.id}   # what clients may filter and sort on
+
+result = await page(session, select(Stock).where(Stock.active), request, ALLOWED,
+                    default_sort=[Sort(field="id")])
+return to_envelope(result)   # {"items", "total", "page", "size", "pages"}
+```
+
+- `page(session, stmt, request, allowed, *, default_sort=(), scalars=True)` (an `AsyncSession`) and `page_sync` (a
+  `Session`) apply the request's filters with `where`, its sort with `order_by` (after any order already on `stmt`,
+  falling back to `default_sort`), then one page with `paginate`. One `allowed` serves filtering and sorting; a page
+  below 1 reads as 1, and bounding `size` is the adapter's job (`page_params`' `max_size`).
+
+For anything else, such as separate filter and sort lists, use the three pieces it's built from:
 
 ```python
 from greentechhub_core.query.types import Filter, FilterGroup, Operator, Sort

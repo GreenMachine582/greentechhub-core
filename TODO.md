@@ -8,11 +8,6 @@
 
 ## 🗺️ Milestones
 
-### Query & data
-- [ ] `sqlalchemy.page(session, stmt, request: PageRequest, *, sortable, filterable, default_sort) -> Page` — one call
-  from core's `PageRequest` (what greentechhub-fastapi's `page_params` builds) to core's `Page`: `where`, `order_by`,
-  `paginate`
-
 ### Dates
 - [ ] Fiscal years — `fiscal_year(d, start_month=7)`, `fiscal_year_bounds(fy, start_month=7)` and
   `fiscal_year_label(fy)` ("2024–25"). Replaces PyFinBot's `core/fiscal_year.py` and the logic behind its `|fy`

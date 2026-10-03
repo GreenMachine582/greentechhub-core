@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy.pool import NullPool
 
-from greentechhub_core.query.types import Sort
-from greentechhub_core.sqlalchemy import order_by, paginate, paginate_sync
+from greentechhub_core.query import to_envelope
+from greentechhub_core.query.types import Filter, FilterGroup, Operator, PageRequest, Sort
+from greentechhub_core.sqlalchemy import order_by, page, page_sync, paginate, paginate_sync
 
 
 class Base(DeclarativeBase):
@@ -114,3 +115,63 @@ def test_paginate_rows_for_a_multi_column_select(db):
         rows, total = paginate_sync(session, stmt, offset=0, limit=2, scalars=False)
     assert total == 12
     assert [tuple(r) for r in rows] == [("p01", 1), ("p02", 2)]
+
+
+# page / page_sync: a PageRequest in, a Page out
+
+
+def _request(**kwargs) -> PageRequest:
+    return PageRequest(**{"page": 1, "size": 5, **kwargs})
+
+
+def test_page_sync_applies_filters_sort_and_paging(db):
+    request = _request(
+        page=2, size=2,
+        sort=[Sort(field="name", direction="desc")],
+        filters=[Filter(field="stock", operator=Operator.NE, value=0)],  # drops p03, p06, p09, p12
+    )
+    with db["sync"]() as session:
+        result = page_sync(session, sa.select(Part), request, ALLOWED)
+    assert (result.total, result.page, result.size) == (8, 2, 2)
+    assert [p.name for p in result.items] == ["p08", "p07"]  # desc: p11 p10 | p08 p07 | ...
+
+
+def test_page_async_with_a_filter_group(db):
+    either = FilterGroup(mode="or", filters=(
+        Filter(field="stock", operator=Operator.EQ, value=0),
+        Filter(field="name", operator=Operator.EQ, value="p01"),
+    ))
+
+    async def run():
+        async with db["async"]() as session:
+            return await page(session, sa.select(Part), _request(filters=[either]), ALLOWED,
+                              default_sort=[Sort(field="id")])
+
+    result = asyncio.run(run())
+    assert result.total == 5 and [p.id for p in result.items] == [1, 3, 6, 9, 12]
+
+
+def test_page_ignores_disallowed_fields_and_uses_the_default_sort(db):
+    request = _request(sort=[Sort(field="secret")],
+                       filters=[Filter(field="secret", operator=Operator.EQ, value=1)])
+    with db["sync"]() as session:
+        result = page_sync(session, sa.select(Part), request, ALLOWED,
+                           default_sort=[Sort(field="id", direction="desc")])
+    assert result.total == 12 and [p.id for p in result.items] == [12, 11, 10, 9, 8]
+
+
+def test_page_past_the_end_and_page_zero(db):
+    with db["sync"]() as session:
+        past = page_sync(session, sa.select(Part), _request(page=9), ALLOWED)
+        zero = page_sync(session, sa.select(Part), _request(page=0, size=3), ALLOWED,
+                         default_sort=[Sort(field="id")])
+    assert (past.items, past.total) == ([], 12)
+    assert [p.id for p in zero.items] == [1, 2, 3]  # page 0 reads as page 1
+
+
+def test_page_round_trips_through_the_envelope(db):
+    with db["sync"]() as session:
+        result = page_sync(session, sa.select(Part), _request(size=5), ALLOWED,
+                           default_sort=[Sort(field="id")])
+    envelope = to_envelope(result)
+    assert (envelope["total"], envelope["pages"], len(envelope["items"])) == (12, 3, 5)
