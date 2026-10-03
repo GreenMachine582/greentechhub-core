@@ -4,20 +4,39 @@
 
 > Open work only: remove an item when it ships — its release note lands in CHANGELOG.md automatically (release-please). See [README.md](README.md) for context and [docs/](docs/) for the detailed design behind each item.
 >
-> Shipped work is recorded in [CHANGELOG.md](CHANGELOG.md) and on the [Releases page](https://github.com/GreenMachine582/greentechhub-core/releases) — this file only tracks what's still open.
+> Shipped work is recorded in [CHANGELOG.md](CHANGELOG.md) and on the [Releases page](https://github.com/GreenMachine582/greentechhub-core/releases) — this file only tracks what's still open. Sections are themes, not versions: release-please picks the version from the commits.
 
 ## 🗺️ Milestones
 
-### v0.5.1 — AuthentikIdentityProvider OIDC token path
-- [ ] Validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's JWKS
+### Query & data
+- [ ] Filter groups and a SQLAlchemy `where` — `query.FilterGroup(mode="and"|"or", filters=…)` (nesting allowed), and
+  `sqlalchemy.where(filters, allowed)`: every `Operator` (`contains`/`starts_with`/`ends_with` case-insensitive with
+  `%`/`_` escaped, `in`/`not_in` take lists, `is_null` a bool) through an allow-list, unknown fields skipped like
+  `order_by`. Replaces PyFinBot's `core/sa_filters_compat.py`; greentechhub-ui's planned `gth_query_builder` (all/any,
+  one nested level) serialises to the same shape
+- [ ] `sqlalchemy.page(session, stmt, request: PageRequest, *, sortable, filterable, default_sort) -> Page` — one call
+  from core's `PageRequest` (what greentechhub-fastapi's `page_params` builds) to core's `Page`: `where`, `order_by`,
+  `paginate`. After the item above
 
-### v0.6 — Background, observability
-- [ ] `observability` — the full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to ([docs/modules.md](docs/modules.md#observability)). `observability.resource`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) has shipped ahead of the rest — the Loki/Alloy JSON logging pipeline wants the same fields today (`logging.setup.configure_logging`'s new `service`/`version` parameters), independent of OTel existing at all.
+### Dates
+- [ ] Fiscal years — `fiscal_year(d, start_month=7)`, `fiscal_year_bounds(fy, start_month=7)` and
+  `fiscal_year_label(fy)` ("2024–25"). Replaces PyFinBot's `core/fiscal_year.py` and the logic behind its `|fy`
+  filter, and matches greentechhub-ui's `gth_date_range(fy_start_month=…)` presets server-side
 
-### From the PyFinBot review
-Generic pieces PyFinBot built for itself, to move here so it can delete them:
-- [ ] `sqlalchemy`: apply core's `query.Filter`s to a select through an allow-list, the filtering counterpart of
-  `order_by` — from PyFinBot's `core/sa_filters_compat.py`
+### Identity
+- [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
+  JWKS. Worth doing once a service runs behind Authentik with JWT forwarding on
+
+### Observability
+- [ ] The full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to
+  ([docs/modules.md](docs/modules.md#observability)). `get_resource_attributes` shipped ahead of it
+
+### Parked — until a consumer asks
+- Notifications: a notification model, store and delivery preferences, for greentechhub-ui's planned notification
+  centre (the `toast()` payload is the message shape)
+- An audit/activity log (who did what, when) for greentechhub-ui's planned `gth_timeline`
+- A currency setting: greentechhub-ui's `money` filter takes its symbol per call (default `$`); a shared
+  `locale.currency` would let a user's or app's setting drive it
 
 ### v1.0 — Validated in production
 - [ ] Both adapter packages consuming this package
