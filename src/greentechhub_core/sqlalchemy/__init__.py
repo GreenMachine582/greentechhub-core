@@ -20,7 +20,14 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
     ) from exc
 
 from greentechhub_core.sqlalchemy.grants import SQLAlchemyGrantStore
-from greentechhub_core.sqlalchemy.query import order_by, paginate, paginate_sync, where
+from greentechhub_core.sqlalchemy.query import (
+    order_by,
+    page,
+    page_sync,
+    paginate,
+    paginate_sync,
+    where,
+)
 from greentechhub_core.sqlalchemy.settings import SQLAlchemySettingsStore
 from greentechhub_core.sqlalchemy.tables import (
     ROLE_GRANTS_TABLE,
@@ -35,6 +42,8 @@ __all__ = [
     "SQLAlchemyGrantStore",
     "SQLAlchemySettingsStore",
     "order_by",
+    "page",
+    "page_sync",
     "paginate",
     "paginate_sync",
     "role_grants_table",
