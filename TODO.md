@@ -9,14 +9,9 @@
 ## 🗺️ Milestones
 
 ### Query & data
-- [ ] Filter groups and a SQLAlchemy `where` — `query.FilterGroup(mode="and"|"or", filters=…)` (nesting allowed), and
-  `sqlalchemy.where(filters, allowed)`: every `Operator` (`contains`/`starts_with`/`ends_with` case-insensitive with
-  `%`/`_` escaped, `in`/`not_in` take lists, `is_null` a bool) through an allow-list, unknown fields skipped like
-  `order_by`. Replaces PyFinBot's `core/sa_filters_compat.py`; greentechhub-ui's planned `gth_query_builder` (all/any,
-  one nested level) serialises to the same shape
 - [ ] `sqlalchemy.page(session, stmt, request: PageRequest, *, sortable, filterable, default_sort) -> Page` — one call
   from core's `PageRequest` (what greentechhub-fastapi's `page_params` builds) to core's `Page`: `where`, `order_by`,
-  `paginate`. After the item above
+  `paginate`
 
 ### Dates
 - [ ] Fiscal years — `fiscal_year(d, start_month=7)`, `fiscal_year_bounds(fy, start_month=7)` and

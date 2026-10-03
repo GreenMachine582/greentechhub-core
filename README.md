@@ -23,14 +23,14 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `events` | `publish()`/`subscribe()` + typed event definitions — logs events today, Redis pub/sub later                               | [docs/events.md](docs/events.md) |
 | `feature_flags` | A `FeatureFlagProvider` interface; env/static-file-backed implementation to start                                          | [docs/modules.md](docs/modules.md#feature-flags) |
 | `health` | Check primitives + a `HealthResult` type — `check_disk`/`check_database`/`check_external` ship today; `check_redis` lands when Redis is deployed for some other reason | [docs/health.md](docs/health.md) |
-| `query` | Framework-independent `Filter`, `Operator`, `Sort`, `Page`, `PageRequest` types and the response envelope shape            | [docs/query.md](docs/query.md) |
+| `query` | Framework-independent `Filter`, `FilterGroup`, `Operator`, `Sort`, `Page`, `PageRequest` types and the response envelope shape            | [docs/query.md](docs/query.md) |
 | `observability` | `resource.py`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) ships today; the full OTel `TracerProvider`/`MeterProvider`/exporter setup stays deferred until a collector exists | [docs/modules.md](docs/modules.md#observability) |
 | `security` | Password hashing, constant-time comparisons, secret redaction for logs, CSRF token generation                              | [docs/modules.md](docs/modules.md#security) |
 | `proxy` | Pure functions parsing/validating `X-Forwarded-*` headers against a trusted-IP allowlist                                   | [docs/modules.md](docs/modules.md#proxy) |
 | `version` | Reports installed `greentechhub-*` package versions + service version, for `/health`/`/version` and deploy debugging       | [docs/architecture.md](docs/architecture.md#package-layout) |
 | `background` | `locks.py` — `Lock`/`FileLock`, OS-advisory-lock-backed, ships today; `scheduler.py`/`tasks.py` deferred until a consumer needs ≥2 scheduled jobs | [docs/modules.md](docs/modules.md#background-tasks) |
 | `types` / `utils` | Shared value types (`FlashMessage`, `Result`/error types) and small utilities with no other natural home                   | [docs/architecture.md](docs/architecture.md) |
-| `sqlalchemy` | Optional (`[sqlalchemy]` extra): `gth_settings`/`gth_role_grants` tables on the service's `MetaData`, `SQLAlchemySettingsStore` and `SQLAlchemyGrantStore`; `order_by` and `paginate` for a service's own selects | [docs/settings.md](docs/settings.md#storage-tables-shipped-sqlalchemy-extra), [docs/query.md](docs/query.md#sqlalchemy) |
+| `sqlalchemy` | Optional (`[sqlalchemy]` extra): `gth_settings`/`gth_role_grants` tables on the service's `MetaData`, `SQLAlchemySettingsStore` and `SQLAlchemyGrantStore`; `where`, `order_by` and `paginate` for a service's own selects | [docs/settings.md](docs/settings.md#storage-tables-shipped-sqlalchemy-extra), [docs/query.md](docs/query.md#sqlalchemy) |
 | `contracts` | Reusable `pytest` base classes (`IdentityProviderContract`, `FeatureFlagProviderContract`, `HealthCheckContract`, `PageContract`, `PermissionResolverContract`, `GrantStoreContract`, `SettingsStoreContract`) adapters subclass against their own implementations — the `contracts` extra | [docs/testing.md](docs/testing.md) |
 
 ## 📚 Docs

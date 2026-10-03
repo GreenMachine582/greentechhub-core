@@ -1,4 +1,4 @@
-"""types — Filter, Operator, Sort, PageRequest, Page: the pagination/filtering
+"""types — Filter, FilterGroup, Operator, Sort, PageRequest, Page: the pagination/filtering
 contract every adapter's query-parameter translation produces and consumes.
 
 greentechhub-core defines these types and the response envelope shape only
@@ -71,6 +71,26 @@ class Filter:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class FilterGroup:
+    """Filters combined with AND ("all of") or OR ("any of"), for what a
+    flat list can't say — e.g. `category in [...] AND (stock = 0 OR name
+    contains "x")`. Groups nest. greentechhub-ui's planned query builder and
+    PyFinBot's API filter spec both serialise to this shape.
+
+    No NOT group: Operator already covers negation per clause (NE, NOT_IN,
+    IS_NULL with False), which keeps the shape small.
+
+    Fields:
+        mode: "and" (default: every filter matches) or "or" (any matches).
+        filters: the clauses, each a Filter or a nested FilterGroup. An empty
+            group restricts nothing, so applying it is a no-op.
+    """
+
+    mode: Literal["and", "or"] = "and"
+    filters: tuple["Filter | FilterGroup", ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Sort:
     """A single field/direction sort clause.
 
@@ -105,10 +125,9 @@ class PageRequest:
             page size; adapters remain free to clamp/override per endpoint.
         sort: ordered list of sort clauses, evaluated left to right. Defaults
             to empty (no explicit sort requested).
-        filters: list of filter clauses, implicitly AND-ed together — this
-            module takes no position on OR/grouping, which is beyond a plain
-            list's expressiveness and would need a richer shape if ever
-            needed. Defaults to empty (no filtering requested).
+        filters: list of filter clauses, implicitly AND-ed together. Each is
+            a Filter or, for OR and grouping, a FilterGroup. Defaults to
+            empty (no filtering requested).
 
     `sort` and `filters` stay plain `list[...]` (not wrapped immutable) even
     though this dataclass is frozen: their field types are given verbatim by
@@ -123,7 +142,7 @@ class PageRequest:
     page: int = 1
     size: int = 20
     sort: list[Sort] = field(default_factory=list)
-    filters: list[Filter] = field(default_factory=list)
+    filters: list[Filter | FilterGroup] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -1,5 +1,6 @@
-"""Applying core's query types to a SQLAlchemy select: sorting through an
-allow-list, and one page plus the total — see docs/query.md#sqlalchemy.
+"""Applying core's query types to a SQLAlchemy select: filtering and sorting
+through an allow-list, and one page plus the total — see
+docs/query.md#sqlalchemy.
 
 Framework-neutral like the rest of core: an adapter parses the request into
 `Sort`s (greentechhub-fastapi's `parse_sort("name,-date")`, a gth-ui
@@ -10,12 +11,84 @@ its own statement.
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 
-from greentechhub_core.query.types import Sort
+from greentechhub_core.query.types import Filter, FilterGroup, Operator, Sort
+
+
+def where(
+    filters: Iterable[Filter | FilterGroup], allowed: Mapping[str, Any]
+) -> ColumnElement[bool] | None:
+    """One boolean condition for `filters` (AND-ed, as PageRequest.filters
+    is), for `stmt.where(...)` — or None when nothing applies.
+
+    `allowed` maps each public field name to its column, as for order_by, so
+    a client can only filter on what the service exposes. A field it doesn't
+    list is skipped rather than raised; a group whose clauses are all
+    skipped (or that is empty) is skipped too.
+
+    contains / starts_with / ends_with are case-insensitive and match `%`,
+    `_` and `\\` literally. in / not_in take a list (a single value is
+    wrapped); is_null takes a bool (False means IS NOT NULL). Values are
+    compared as given: converting query-string text to the column's type is
+    the caller's job.
+    """
+    return _combine("and", filters, allowed)
+
+
+def _combine(
+    mode: str, clauses: Iterable[Filter | FilterGroup], allowed: Mapping[str, Any]
+) -> ColumnElement[bool] | None:
+    parts = [p for c in clauses if (p := _clause(c, allowed)) is not None]
+    if not parts:
+        return None
+    if len(parts) == 1:
+        return parts[0]
+    return (or_ if mode == "or" else and_)(*parts)
+
+
+def _clause(clause: Filter | FilterGroup, allowed: Mapping[str, Any]) -> ColumnElement[bool] | None:
+    if isinstance(clause, FilterGroup):
+        return _combine(clause.mode, clause.filters, allowed)
+    column = allowed.get(clause.field)
+    if column is None:
+        return None
+    return _compare(column, Operator(clause.operator), clause.value)
+
+
+def _like(value: Any) -> str:
+    return str(value).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _compare(column: Any, op: Operator, value: Any) -> ColumnElement[bool]:
+    match op:
+        case Operator.EQ:
+            return column == value
+        case Operator.NE:
+            return column != value
+        case Operator.GT:
+            return column > value
+        case Operator.GTE:
+            return column >= value
+        case Operator.LT:
+            return column < value
+        case Operator.LTE:
+            return column <= value
+        case Operator.IN | Operator.NOT_IN:
+            values = list(value) if isinstance(value, (list, tuple, set, frozenset)) else [value]
+            return column.in_(values) if op is Operator.IN else column.not_in(values)
+        case Operator.CONTAINS:
+            return column.ilike(f"%{_like(value)}%", escape="\\")
+        case Operator.STARTS_WITH:
+            return column.ilike(f"{_like(value)}%", escape="\\")
+        case Operator.ENDS_WITH:
+            return column.ilike(f"%{_like(value)}", escape="\\")
+        case Operator.IS_NULL:
+            return column.is_(None) if value else column.is_not(None)
+    raise ValueError(f"unsupported operator {op!r}")  # pragma: no cover - every Operator is matched
 
 
 def order_by(

@@ -1,6 +1,6 @@
 """greentechhub_core.sqlalchemy — SQLAlchemy-backed SettingsStore and
 GrantStore (docs/settings.md#storage-tables-shipped-sqlalchemy-extra), and
-paging/sorting helpers for a service's own selects (docs/query.md#sqlalchemy),
+filtering, sorting and paging helpers for a service's own selects (docs/query.md#sqlalchemy),
 behind the optional `[sqlalchemy]` extra.
 
 Importing this package without SQLAlchemy installed raises ImportError
@@ -20,7 +20,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
     ) from exc
 
 from greentechhub_core.sqlalchemy.grants import SQLAlchemyGrantStore
-from greentechhub_core.sqlalchemy.query import order_by, paginate, paginate_sync
+from greentechhub_core.sqlalchemy.query import order_by, paginate, paginate_sync, where
 from greentechhub_core.sqlalchemy.settings import SQLAlchemySettingsStore
 from greentechhub_core.sqlalchemy.tables import (
     ROLE_GRANTS_TABLE,
@@ -39,4 +39,5 @@ __all__ = [
     "paginate_sync",
     "role_grants_table",
     "settings_table",
+    "where",
 ]
