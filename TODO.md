@@ -16,8 +16,6 @@
 
 ### From the PyFinBot review
 Generic pieces PyFinBot built for itself, to move here so it can delete them:
-- [ ] An `ApplicationError` with an explicit HTTP status (PyFinBot's `StatusError`: 400/502/503 with its own
-  `code`), which greentechhub-fastapi's handlers answer at that status
 - [ ] Site banner setting definitions (message + tone) for greentechhub-fastapi's opt-in site banner
 - [ ] `sqlalchemy`: `paginate(session, stmt, offset, limit)` (a count plus one page) and a sort string
   (`"-date,id"`) → `order_by` against an allow-list. From PyFinBot's `web/paging.py` and `core/sorting.py`;

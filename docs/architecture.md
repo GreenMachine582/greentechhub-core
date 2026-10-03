@@ -87,7 +87,8 @@ greentechhub-core/
 │   │   └── grants.py              # SQLAlchemyGrantStore
 │   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings
 │   └── types/
-│       └── common.py              # FlashMessage, Result, etc.
+│       ├── common.py              # FlashMessage, Result, etc.
+│       └── errors.py              # ApplicationError and its HTTP-shaped subclasses (docs/modules.md#errors)
 ├── tests/
 ├── pyproject.toml
 └── README.md
