@@ -16,7 +16,6 @@
 
 ### From the PyFinBot review
 Generic pieces PyFinBot built for itself, to move here so it can delete them:
-- [ ] Site banner setting definitions (message + tone) for greentechhub-fastapi's opt-in site banner
 - [ ] `sqlalchemy`: `paginate(session, stmt, offset, limit)` (a count plus one page) and a sort string
   (`"-date,id"`) → `order_by` against an allow-list. From PyFinBot's `web/paging.py` and `core/sorting.py`;
   its filter compat layer (`core/sa_filters_compat.py`) could map onto core's `query.Filter` in the same PR

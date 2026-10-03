@@ -3,7 +3,7 @@
 # ⚙️ Settings and Role Resolution
 
 > **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
-> the `Settings` facade, secret settings, the landing-page factory and the SQLAlchemy storage tables have all shipped.
+> the `Settings` facade, secret settings, the landing-page and site-banner factories and the SQLAlchemy storage tables have all shipped.
 > The adapter work that builds on them is tracked in the fastapi and ui repos' TODOs.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
@@ -122,7 +122,8 @@ tuple (or a subset) to its own registry. All are USER settings.
   - the landing-page redirect, which is fastapi's part.
 - **Deliberately not built-ins:**
   - Notification preferences wait for ui's notification centre.
-  - APP-scope settings such as a currency symbol or a site banner are left to each service.
+  - APP-scope settings such as a currency symbol are left to each service. The site banner is the exception: see
+    [Site banner](#site-banner) below.
   - Per-table hidden columns stay in localStorage, because they're per page and per table rather than a shared key.
 
 ### Landing page (shipped)
@@ -146,6 +147,28 @@ registry = SettingsRegistry([
   later removed from the choices falls back to the default, like any stale choice.
 - Core only defines the setting. Acting on it (redirecting `/` or the post-login page to it) is the adapter's or
   service's job; `LANDING_PAGE_KEY` is the key to read.
+
+### Site banner
+
+| Factory | Keys | Types | Defaults | Values | Group |
+|---|---|---|---|---|---|
+| `site_banner_settings(*, edit_permission=None, group="Site")` | `site.banner` (`SITE_BANNER_KEY`), `site.banner_tone` (`SITE_BANNER_TONE_KEY`) | str, choice | `""` (no banner), `"warn"` | `SITE_BANNER_TONES`: info, warn, bad, good, neutral | Site |
+
+```python
+from greentechhub_core.settings.builtins import USER_PREFERENCES, site_banner_settings
+
+registry = SettingsRegistry([
+    *USER_PREFERENCES,
+    *site_banner_settings(edit_permission="settings.manage"),
+])
+```
+
+- An admin-set, site-wide message such as planned maintenance: APP scope, so one value for everyone.
+- The tones are exactly greentechhub-ui's `gth_alert_banner` tones; a stored tone outside them falls back to `warn`.
+- It's a factory, not a constant, because the permission that may edit it is the service's own.
+- The split across the repos: core defines the settings; an adapter reads the resolved values and passes them to the
+  template as greentechhub-ui's `site_banners` (greentechhub-fastapi's opt-in site banner); ui renders the strip
+  above the navbar.
 
 ## Settings stores and facade (shipped)
 
