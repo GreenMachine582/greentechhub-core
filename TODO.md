@@ -8,11 +8,6 @@
 
 ## 🗺️ Milestones
 
-### Dates
-- [ ] Fiscal years — `fiscal_year(d, start_month=7)`, `fiscal_year_bounds(fy, start_month=7)` and
-  `fiscal_year_label(fy)` ("2024–25"). Replaces PyFinBot's `core/fiscal_year.py` and the logic behind its `|fy`
-  filter, and matches greentechhub-ui's `gth_date_range(fy_start_month=…)` presets server-side
-
 ### Identity
 - [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
   JWKS. Worth doing once a service runs behind Authentik with JWT forwarding on

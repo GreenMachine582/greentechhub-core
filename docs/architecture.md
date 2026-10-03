@@ -77,6 +77,7 @@ greentechhub-core/
 │   ├── proxy/
 │   │   └── trusted_proxy.py
 │   ├── version.py
+│   ├── dates.py                   # fiscal years (docs/modules.md#dates)
 │   ├── background/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs

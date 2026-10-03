@@ -1,6 +1,6 @@
 [← Back to README](../README.md)
 
-# 🧩 Feature Flags, Observability, Security, Proxy, Errors, Background, CLI
+# 🧩 Feature Flags, Observability, Security, Proxy, Errors, Dates, Background, CLI
 
 The smaller modules that don't warrant their own doc yet — see [docs/identity.md](identity.md), [docs/permissions.md](permissions.md), [docs/settings.md](settings.md), [docs/events.md](events.md), [docs/query.md](query.md), and [docs/health.md](health.md) for the higher-detail ones.
 
@@ -34,6 +34,26 @@ service's 502 vs 503, an upload's 413 vs 422: `ApplicationError("Mailbox unreach
 status_code=503)`. `None` (the default) leaves the adapter's type → status mapping in charge; when set, an adapter
 uses it ahead of that mapping. A subclass can fix one as a class attribute and a caller can still override it,
 like `code`.
+
+## Dates
+
+`dates.py`: fiscal years that start on the 1st of any month (July by default, Australia's) and run twelve months.
+
+```python
+from greentechhub_core.dates import fiscal_year, fiscal_year_bounds, fiscal_year_label
+
+fiscal_year(date(2025, 3, 1))          # 2024
+fiscal_year_bounds(2024)               # (date(2024, 7, 1), date(2025, 6, 30))
+fiscal_year_label(2024)                # "2024–25"
+fiscal_year(date(2025, 3, 1), start_month=4)   # 2024: an April start
+fiscal_year_label(2024, start_month=1)         # "2024": the calendar year
+```
+
+- A fiscal year is identified by the year it **starts** in, so its label names both years: a bare "FY2025" reads as
+  the year it ends in to many.
+- greentechhub-ui's `gth_date_range(fy_start_month=...)` "This FY" / "Last FY" presets use the same rule client-side,
+  so a route can rebuild the same range with `fiscal_year_bounds`.
+- `start_month` outside 1–12 raises `ValueError`.
 
 ## Background tasks
 
