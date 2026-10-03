@@ -4,15 +4,24 @@
 
 > Open work only: remove an item when it ships — its release note lands in CHANGELOG.md automatically (release-please). See [README.md](README.md) for context and [docs/](docs/) for the detailed design behind each item.
 >
-> Shipped work is recorded in [CHANGELOG.md](CHANGELOG.md) and on the [Releases page](https://github.com/GreenMachine582/greentechhub-core/releases) — this file only tracks what's still open.
+> Shipped work is recorded in [CHANGELOG.md](CHANGELOG.md) and on the [Releases page](https://github.com/GreenMachine582/greentechhub-core/releases) — this file only tracks what's still open. Sections are themes, not versions: release-please picks the version from the commits.
 
 ## 🗺️ Milestones
 
-### v0.5.1 — AuthentikIdentityProvider OIDC token path
-- [ ] Validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's JWKS
+### Identity
+- [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
+  JWKS. Worth doing once a service runs behind Authentik with JWT forwarding on
 
-### v0.6 — Background, observability
-- [ ] `observability` — the full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to ([docs/modules.md](docs/modules.md#observability)). `observability.resource`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) has shipped ahead of the rest — the Loki/Alloy JSON logging pipeline wants the same fields today (`logging.setup.configure_logging`'s new `service`/`version` parameters), independent of OTel existing at all.
+### Observability
+- [ ] The full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to
+  ([docs/modules.md](docs/modules.md#observability)). `get_resource_attributes` shipped ahead of it
+
+### Parked — until a consumer asks
+- Notifications: a notification model, store and delivery preferences, for greentechhub-ui's planned notification
+  centre (the `toast()` payload is the message shape)
+- An audit/activity log (who did what, when) for greentechhub-ui's planned `gth_timeline`
+- A currency setting: greentechhub-ui's `money` filter takes its symbol per call (default `$`); a shared
+  `locale.currency` would let a user's or app's setting drive it
 
 ### v1.0 — Validated in production
 - [ ] Both adapter packages consuming this package

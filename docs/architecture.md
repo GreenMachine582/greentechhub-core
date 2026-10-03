@@ -77,6 +77,7 @@ greentechhub-core/
 │   ├── proxy/
 │   │   └── trusted_proxy.py
 │   ├── version.py
+│   ├── dates.py                   # fiscal years (docs/modules.md#dates)
 │   ├── background/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
@@ -87,7 +88,8 @@ greentechhub-core/
 │   │   └── grants.py              # SQLAlchemyGrantStore
 │   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings
 │   └── types/
-│       └── common.py              # FlashMessage, Result, etc.
+│       ├── common.py              # FlashMessage, Result, etc.
+│       └── errors.py              # ApplicationError and its HTTP-shaped subclasses (docs/modules.md#errors)
 ├── tests/
 ├── pyproject.toml
 └── README.md

@@ -10,11 +10,15 @@ from greentechhub_core.settings.builtins import (
     NUMBER_FORMAT,
     PAGE_SIZE,
     SIDEBAR_DEFAULT,
+    SITE_BANNER_KEY,
+    SITE_BANNER_TONE_KEY,
+    SITE_BANNER_TONES,
     THEME,
     TIME_FORMAT,
     TIMEZONE,
     USER_PREFERENCES,
     landing_page_setting,
+    site_banner_settings,
 )
 
 
@@ -154,3 +158,48 @@ def test_landing_page_setting_is_opt_in_and_registers_with_the_preferences():
     assert registry.resolve(LANDING_PAGE_KEY, user={LANDING_PAGE_KEY: "/reports"}) == "/reports"
     assert registry.resolve(LANDING_PAGE_KEY, user={LANDING_PAGE_KEY: "/gone"}) == "/"
     assert registry.coerce(LANDING_PAGE_KEY, "/reports") == "/reports"
+
+
+# site_banner_settings
+
+
+def test_site_banner_settings_have_the_documented_shape():
+    banner, tone = site_banner_settings()
+    assert (banner.key, tone.key) == (SITE_BANNER_KEY, SITE_BANNER_TONE_KEY)
+    assert (SITE_BANNER_KEY, SITE_BANNER_TONE_KEY) == ("site.banner", "site.banner_tone")
+    assert banner.type is SettingType.STR and banner.default == ""
+    assert tone.type is SettingType.CHOICE and tone.default == "warn"
+    assert banner.scope is SettingScope.APP and tone.scope is SettingScope.APP
+    assert banner.group == tone.group == "Site"
+    assert banner.edit_permission is None and tone.edit_permission is None
+    # Exactly greentechhub-ui's gth_alert_banner tones.
+    assert tone.choice_values == ("info", "warn", "bad", "good", "neutral")
+    assert dict(tone.choices) == SITE_BANNER_TONES
+
+
+def test_site_banner_settings_take_the_services_permission_and_group():
+    banner, tone = site_banner_settings(edit_permission="settings.manage", group="App")
+    assert banner.edit_permission == tone.edit_permission == "settings.manage"
+    assert banner.group == tone.group == "App"
+
+
+def test_site_banner_settings_are_opt_in_and_register_with_the_preferences():
+    keys = {s.key for s in USER_PREFERENCES}
+    assert SITE_BANNER_KEY not in keys and SITE_BANNER_TONE_KEY not in keys
+    registry = SettingsRegistry([*USER_PREFERENCES, *site_banner_settings()])
+    assert registry.resolve(SITE_BANNER_KEY) == ""  # no banner by default
+    app = {SITE_BANNER_KEY: "Down for maintenance at 9pm", SITE_BANNER_TONE_KEY: "bad"}
+    assert registry.resolve(SITE_BANNER_KEY, app=app) == "Down for maintenance at 9pm"
+    assert registry.resolve(SITE_BANNER_TONE_KEY, app=app) == "bad"
+    # A stored tone the banner can't show falls back to the default.
+    assert registry.resolve(SITE_BANNER_TONE_KEY, app={SITE_BANNER_TONE_KEY: "shout"}) == "warn"
+
+
+def test_site_banner_tone_accepts_only_the_banner_tones():
+    _, tone = site_banner_settings()
+    for value in SITE_BANNER_TONES:
+        assert tone.coerce(value) == value
+    with pytest.raises(ValueError):
+        tone.validate("danger")  # a toast kind, not a banner tone
+    banner, _ = site_banner_settings()
+    assert banner.validate("") == ""  # empty means no banner
