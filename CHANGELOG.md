@@ -5,6 +5,18 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.9.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.8.0...v0.9.0) (2026-10-03)
+
+
+### Features
+
+* **dates:** fiscal years ([#34](https://github.com/GreenMachine582/greentechhub-core/issues/34)) ([b521eff](https://github.com/GreenMachine582/greentechhub-core/commit/b521effb93b9d2904af0a4cfe8e74cb5ab5af941))
+* **errors:** an explicit HTTP status, and BadRequestError ([#28](https://github.com/GreenMachine582/greentechhub-core/issues/28)) ([8b5af7f](https://github.com/GreenMachine582/greentechhub-core/commit/8b5af7f5030ae757ff615944468eda6084820a90))
+* **query:** filter groups and a SQLAlchemy where ([#32](https://github.com/GreenMachine582/greentechhub-core/issues/32)) ([ea35655](https://github.com/GreenMachine582/greentechhub-core/commit/ea35655e73f3ecc499f0128eb6c9ad31057c49f4))
+* **settings:** site banner setting definitions ([#29](https://github.com/GreenMachine582/greentechhub-core/issues/29)) ([e49ec4d](https://github.com/GreenMachine582/greentechhub-core/commit/e49ec4d351210b14199aae973e9a98f72ca39ccf))
+* **sqlalchemy:** page() from a PageRequest ([#33](https://github.com/GreenMachine582/greentechhub-core/issues/33)) ([74cca9d](https://github.com/GreenMachine582/greentechhub-core/commit/74cca9d4bc9ea2343483536050423fdba94c9ef8))
+* **sqlalchemy:** paging and sorting helpers ([#30](https://github.com/GreenMachine582/greentechhub-core/issues/30)) ([134d161](https://github.com/GreenMachine582/greentechhub-core/commit/134d161c590b33203f35741314ff1157787123aa))
+
 ## [0.8.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.7.0...v0.8.0) (2026-10-02)
 
 
