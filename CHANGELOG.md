@@ -5,6 +5,23 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.10.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.9.0...v0.10.0) (2026-10-04)
+
+
+### Features
+
+* **audit:** an activity log ([#44](https://github.com/GreenMachine582/greentechhub-core/issues/44)) ([7102b64](https://github.com/GreenMachine582/greentechhub-core/commit/7102b64cf1372036c936dd709253a5126968348a))
+* **notifications:** a notification model and store ([#41](https://github.com/GreenMachine582/greentechhub-core/issues/41)) ([9231706](https://github.com/GreenMachine582/greentechhub-core/commit/92317061d702bc83861cb7da8bec48754124f624))
+* **notifications:** delivery preferences ([#42](https://github.com/GreenMachine582/greentechhub-core/issues/42)) ([f2ee996](https://github.com/GreenMachine582/greentechhub-core/commit/f2ee996d703649bdab4db7c0ea33c650eabccead))
+* **security:** login throttling ([#39](https://github.com/GreenMachine582/greentechhub-core/issues/39)) ([4431fb9](https://github.com/GreenMachine582/greentechhub-core/commit/4431fb9804b1cc4bf24e3be2eeb6fa3cd98aff5a))
+* **security:** single-use tokens ([#43](https://github.com/GreenMachine582/greentechhub-core/issues/43)) ([563bc09](https://github.com/GreenMachine582/greentechhub-core/commit/563bc092a27d1aaf66cc44ffafb232ec1bb69575))
+* **settings:** a self-signup setting ([#40](https://github.com/GreenMachine582/greentechhub-core/issues/40)) ([2133a63](https://github.com/GreenMachine582/greentechhub-core/commit/2133a63b5f87586411c6528fa4c996e4735806dd))
+
+
+### Bug Fixes
+
+* **sqlalchemy:** paginate without SQLModel's execute warning ([#37](https://github.com/GreenMachine582/greentechhub-core/issues/37)) ([799da8e](https://github.com/GreenMachine582/greentechhub-core/commit/799da8e6df139e4a8c12d3d8ba599b5e7406ca3d))
+
 ## [0.9.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.8.0...v0.9.0) (2026-10-03)
 
 
