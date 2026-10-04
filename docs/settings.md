@@ -4,7 +4,8 @@
 
 > **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
 > the `Settings` facade, secret settings, the landing-page, site-banner and self-signup factories (and notification delivery preferences, see
-> [modules.md](modules.md#delivery-preferences)) and the SQLAlchemy storage tables have all shipped.
+> [modules.md](modules.md#delivery-preferences), and the mail server's `smtp_settings`, see [modules.md](modules.md#email)) and the
+> SQLAlchemy storage tables have all shipped.
 > The adapter work that builds on them is tracked in the fastapi and ui repos' TODOs.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
