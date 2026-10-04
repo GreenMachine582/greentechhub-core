@@ -1,5 +1,5 @@
 """greentechhub_core.sqlalchemy — SQLAlchemy-backed SettingsStore,
-GrantStore, AttemptStore and NotificationStore
+GrantStore, AttemptStore, NotificationStore and TokenStore
 (docs/settings.md#storage-tables-shipped-sqlalchemy-extra), and
 filtering, sorting and paging helpers for a service's own selects (docs/query.md#sqlalchemy),
 behind the optional `[sqlalchemy]` extra.
@@ -22,6 +22,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
 
 from greentechhub_core.sqlalchemy.grants import SQLAlchemyGrantStore
 from greentechhub_core.sqlalchemy.notifications import SQLAlchemyNotificationStore
+from greentechhub_core.sqlalchemy.one_time import SQLAlchemyTokenStore
 from greentechhub_core.sqlalchemy.query import (
     order_by,
     page,
@@ -34,10 +35,12 @@ from greentechhub_core.sqlalchemy.settings import SQLAlchemySettingsStore
 from greentechhub_core.sqlalchemy.tables import (
     LOGIN_ATTEMPTS_TABLE,
     NOTIFICATIONS_TABLE,
+    ONE_TIME_TOKENS_TABLE,
     ROLE_GRANTS_TABLE,
     SETTINGS_TABLE,
     login_attempts_table,
     notifications_table,
+    one_time_tokens_table,
     role_grants_table,
     settings_table,
 )
@@ -46,12 +49,14 @@ from greentechhub_core.sqlalchemy.throttle import SQLAlchemyAttemptStore
 __all__ = [
     "LOGIN_ATTEMPTS_TABLE",
     "NOTIFICATIONS_TABLE",
+    "ONE_TIME_TOKENS_TABLE",
     "ROLE_GRANTS_TABLE",
     "SETTINGS_TABLE",
     "SQLAlchemyAttemptStore",
     "SQLAlchemyGrantStore",
     "SQLAlchemyNotificationStore",
     "SQLAlchemySettingsStore",
+    "SQLAlchemyTokenStore",
     "order_by",
     "page",
     "page_sync",
@@ -59,6 +64,7 @@ __all__ = [
     "paginate_sync",
     "login_attempts_table",
     "notifications_table",
+    "one_time_tokens_table",
     "role_grants_table",
     "settings_table",
     "where",

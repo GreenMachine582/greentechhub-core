@@ -16,7 +16,7 @@ The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until th
 
 ## Security
 
-`passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins (below). Framework-independent primitives only.
+`passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins and `one_time.py` issues single-use link tokens (both below). Framework-independent primitives only.
 
 ### Login throttling
 
@@ -50,6 +50,37 @@ else:
 ```
 
 Showing the error and the `Retry-After` header is the adapter's job (greentechhub-fastapi's login views).
+
+### Single-use tokens
+
+`OneTimeTokens` issues the tokens that go in password-reset and email-verification links: unguessable, expiring and
+good for one use.
+
+- `issue(subject, purpose, lifetime=None)` returns a fresh `generate_token()` (256 random bits). That's the only time
+  the plaintext exists. The store keeps only its SHA-256 (`token_hash`), so a leaked table can't be turned back into
+  working links.
+- Each token has a `purpose` (`"password_reset"`, `"email_verification"`, …), so one kind of link can't be used as
+  another. Issuing a new token revokes the subject's earlier unused tokens for that purpose, so only the latest link
+  works.
+- `peek(token, purpose)` returns the subject while the token is valid, without using it up (to show the "choose a new
+  password" form). `redeem(token, purpose)` uses it up and returns the subject, or `None` if it's unknown, expired,
+  already used or for another purpose; a wrong purpose leaves the token unused.
+- Tokens last `lifetime` (default an hour; pass a longer one to `issue` for, say, a two-day verification link).
+  `prune()` deletes tokens that expired or were used over a day ago.
+- The hashes live in a `TokenStore`: `InMemoryTokenStore`, or `SQLAlchemyTokenStore` over `gth_one_time_tokens`
+  (`[sqlalchemy]` extra). Its `use` is one conditional `UPDATE`, so two redeems racing for one token can't both win.
+  `TokenStoreContract` checks any implementation. Every method has a `_sync` twin.
+
+```python
+from greentechhub_core.security import OneTimeTokens
+
+tokens = OneTimeTokens(token_store)
+token = await tokens.issue(user.subject, "password_reset")       # email f"{base}/reset/{token}"
+...
+subject = await tokens.redeem(token, "password_reset")           # on the reset form's POST
+if subject is None:
+    ...  # "This link has expired or was already used."
+```
 
 ## Notifications
 

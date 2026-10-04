@@ -74,7 +74,8 @@ greentechhub-core/
 │   │   ├── passwords.py
 │   │   ├── tokens.py
 │   │   ├── redact.py
-│   │   └── throttle.py            # LoginThrottle + AttemptStore protocol + InMemoryAttemptStore
+│   │   ├── throttle.py            # LoginThrottle + AttemptStore protocol + InMemoryAttemptStore
+│   │   └── one_time.py            # OneTimeTokens + TokenStore protocol + InMemoryTokenStore
 │   ├── notifications/
 │   │   ├── model.py               # Notification (toast()'s shape), new_notification, from_toast
 │   │   ├── store.py               # NotificationStore protocol + InMemoryNotificationStore
@@ -88,12 +89,13 @@ greentechhub-core/
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
 │   ├── sqlalchemy/                # optional `[sqlalchemy]` extra
-│   │   ├── tables.py              # settings/role_grants/login_attempts/notifications tables on the service's MetaData
+│   │   ├── tables.py              # settings/role_grants/login_attempts/notifications/one_time_tokens tables on the service's MetaData
 │   │   ├── settings.py            # SQLAlchemySettingsStore
 │   │   ├── grants.py              # SQLAlchemyGrantStore
 │   │   ├── throttle.py            # SQLAlchemyAttemptStore
-│   │   └── notifications.py       # SQLAlchemyNotificationStore
-│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings, throttle, notifications
+│   │   ├── notifications.py       # SQLAlchemyNotificationStore
+│   │   └── one_time.py            # SQLAlchemyTokenStore
+│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings, throttle, notifications, one_time
 │   └── types/
 │       ├── common.py              # FlashMessage, Result, etc.
 │       └── errors.py              # ApplicationError and its HTTP-shaped subclasses (docs/modules.md#errors)
