@@ -274,10 +274,12 @@ importing it raises `ImportError` naming the extra; nothing else in core imports
 |---|---|
 | `settings_table(metadata)` | `gth_settings`: `scope`, `subject` (`""` for app rows), `key` (together the primary key), `value` (JSON), `updated_at` |
 | `role_grants_table(metadata)` | `gth_role_grants`: `subject`, `role` (together the primary key), `granted_at` |
+| `login_attempts_table(metadata)` | `gth_login_attempts`: `key` (the primary key), `failures`, `window_start`, `locked_until` (see [modules.md](modules.md#login-throttling)) |
 | `SQLAlchemySettingsStore(table, ...)` | A `SettingsStore` over `gth_settings` |
 | `SQLAlchemyGrantStore(table, ...)` | A `GrantStore` over `gth_role_grants` |
+| `SQLAlchemyAttemptStore(table, ...)` | An `AttemptStore` over `gth_login_attempts`, for `LoginThrottle` |
 
-Both stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
+All three stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
 `async_sessionmaker`, for the async ones), or both. Calling a method whose factory wasn't given raises
 `RuntimeError`. Each call runs in its own transaction.
 
@@ -304,14 +306,17 @@ settings = Settings(registry, SQLAlchemySettingsStore(settings_rows, async_sessi
 
 **Alembic recipe.** The tables are ordinary `Table`s on your metadata, so migrations are the usual autogenerate:
 
-1. Call `settings_table`/`role_grants_table` in a module your `env.py` imports before it reads `target_metadata`
+1. Call `settings_table`/`role_grants_table`/`login_attempts_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
    (calling them again on the same metadata returns the existing table, so the app and `env.py` can both call them).
-2. `alembic revision --autogenerate -m "gth settings and role grants"` detects both tables.
+2. `alembic revision --autogenerate -m "gth settings and role grants"` detects them.
 3. Review the revision and `alembic upgrade head`.
 
 - `value` is SQLAlchemy's `JSON` type, so bools, ints and strings read back with their types on SQLite and
   PostgreSQL alike.
 - `set` is an update, then an insert if no row matched, which works on every backend. A concurrent insert of the
   same row is retried once as an update. A concurrent `assign` of the same grant is treated as already assigned.
+- An attempt store's `hit` raises the count in the database (`failures = failures + 1`), so simultaneous failures
+  all count; a first failure whose insert loses a race is retried once as that increment. SQLite returns its
+  datetimes without a zone; the store reads them back as UTC.
 - Both stores pass `SettingsStoreContract` / `GrantStoreContract`, run against SQLite with sync and `aiosqlite`
   sessions.

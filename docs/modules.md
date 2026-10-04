@@ -16,7 +16,40 @@ The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until th
 
 ## Security
 
-`passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`. Framework-independent primitives only.
+`passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins (below). Framework-independent primitives only.
+
+### Login throttling
+
+`LoginThrottle` counts failed attempts per key and locks a key out once it has failed too often, so a password
+can't be guessed forever:
+
+- A fixed window: `max_failures` failures (default 5) within `window` of the first (default 15 minutes) lock that
+  key for `lockout` (default 15 minutes). A failure after the lock ends but still inside the window locks it again
+  straight away, so a guesser gets one try per lockout until the window runs out. A success clears the key.
+- Keys are strings. A login form throttles by account **and** by client: `account_key(username)` (case and
+  surrounding spaces ignored) and `client_key(ip)` (the address after trusted-proxy resolution). Every method takes
+  several keys and answers for the most restrictive, so one client trying many accounts and many clients trying one
+  account are both stopped. Other forms (register, password reset) can use their own prefixes.
+- The counts live in an `AttemptStore`: `InMemoryAttemptStore` for tests and single-process tools, or
+  `SQLAlchemyAttemptStore` over `gth_login_attempts` (`[sqlalchemy]` extra, see
+  [settings.md](settings.md#storage-tables-shipped-sqlalchemy-extra)) so every worker shares one count.
+  `AttemptStoreContract` checks any implementation.
+- Every method has a `_sync` twin. `prune()` deletes records no window or lockout still needs; run it now and then.
+
+```python
+from greentechhub_core.security import LoginThrottle, account_key, client_key, verify_password
+
+throttle = LoginThrottle(attempt_store)
+keys = (account_key(username), client_key(client_ip))
+if not (status := await throttle.check(*keys)).allowed:
+    ...  # refuse without checking the password; Retry-After: status.retry_after
+if user is None or not verify_password(password, user.password_hash):
+    status = await throttle.record_failure(*keys)  # one generic "wrong user ID or password" error
+else:
+    await throttle.record_success(account_key(username))
+```
+
+Showing the error and the `Retry-After` header is the adapter's job (greentechhub-fastapi's login views).
 
 ## Proxy
 

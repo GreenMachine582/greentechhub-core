@@ -11,10 +11,6 @@
 Cross-repo order (with greentechhub-fastapi and greentechhub-ui): Accounts (M1) → Notifications & email (M2) →
 consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.0.
 
-### Accounts (M1)
-- [ ] Login throttling — a failed-attempt counter with lockout (in-memory + SQLAlchemy stores, contract tests),
-  for greentechhub-fastapi's login and register views to rate-limit by account and by client
-
 ### Notifications & email (M2)
 - [ ] Notifications — a notification model and a `NotificationStore` protocol (in-memory/JSON + SQLAlchemy, like
   settings and grants) with contract tests, for greentechhub-ui's notification centre; the `toast()` payload is
