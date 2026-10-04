@@ -168,10 +168,10 @@ hint).
 
 ```python
 from greentechhub_core.email import SettingsEmailSender, new_email, smtp_settings
-from greentechhub_core.settings.crypto import FernetCipher
+from greentechhub_core.settings.crypto import settings_cipher
 
 registry = SettingsRegistry([*USER_PREFERENCES, *smtp_settings(edit_permission="settings.manage")])
-settings = Settings(registry, store, cipher=FernetCipher(key))     # the password needs a cipher
+settings = Settings(registry, store, cipher=settings_cipher(config))   # the password needs a cipher
 mailer = SettingsEmailSender(settings)
 
 await mailer.send(new_email(user.email, "Your export is ready", "Download it from Reports."))
