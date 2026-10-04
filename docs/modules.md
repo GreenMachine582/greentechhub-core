@@ -1,6 +1,6 @@
 [← Back to README](../README.md)
 
-# 🧩 Feature Flags, Observability, Security, Notifications, Proxy, Errors, Dates, Background, CLI
+# 🧩 Feature Flags, Observability, Security, Notifications, Audit, Proxy, Errors, Dates, Background, CLI
 
 The smaller modules that don't warrant their own doc yet — see [docs/identity.md](identity.md), [docs/permissions.md](permissions.md), [docs/settings.md](settings.md), [docs/events.md](events.md), [docs/query.md](query.md), and [docs/health.md](health.md) for the higher-detail ones.
 
@@ -141,6 +141,38 @@ is never dropped. `delivery_channels(choice)` maps one choice to its channels.
 The split across the repos: core holds the model, the stores and the preferences; greentechhub-fastapi adds the
 routes and a `notify(user, toast_payload)` helper that checks `channels_for`; greentechhub-ui draws the bell and the
 panel.
+
+## Audit log
+
+`audit/` records who did what, when: the source for greentechhub-ui's `gth_timeline` activity feed and, later, a
+record's history tab.
+
+- An `AuditEntry` has an `actor` (an `Identity.subject`, or `None` for the system, e.g. a scheduled sync), an
+  `action` (dotted lowercase words, at least two: `"stock.archived"`, `"role.granted"`), optionally the record it
+  touched (`target_type`, `target_id`), a `summary` for the timeline ("Archived ASX:BHP") and JSON `details` (before
+  and after values, counts).
+- `new_entry(action, *, actor=None, target=None, summary="", details=None)` makes one with a fresh id and time.
+  `target` is `(type, id)`; the id is kept as a string. Details must be JSON-serialisable, and they're scrubbed on
+  the way in: the value of any key that looks like a credential (the `password`, `token`, `secret`, `api_key`, … of
+  `security.redact`), at any depth, becomes `***REDACTED***`, so an audit trail never holds one.
+- An `AuditStore` keeps them: `record(entry)`; `list(actor=, action=, target=, before=, limit=50)` (newest first;
+  `action="stock."` with the trailing dot matches every stock action; `target=("stock", None)` every stock;
+  `before` pages back); and `prune(before)` for retention. Each has a `_sync` twin.
+- `InMemoryAuditStore` for tests and single-process tools; `SQLAlchemyAuditStore` over `gth_audit_log`
+  (`[sqlalchemy]` extra) filters in the database. `AuditStoreContract` checks any implementation.
+
+```python
+from greentechhub_core.audit import new_entry
+
+await audit.record(new_entry("stock.archived", actor=user.subject, target=("stock", stock.id),
+                             summary=f"Archived {stock.market}:{stock.symbol}",
+                             details={"before": {"is_active": True}, "after": {"is_active": False}}))
+history = await audit.list(target=("stock", stock.id))      # a record's history, newest first
+activity = await audit.list(action="stock.", limit=20)      # the stocks timeline
+```
+
+The split across the repos: services record entries where they change data; greentechhub-ui's `gth_timeline` renders
+them; greentechhub-fastapi may later add an admin activity page.
 
 ## Proxy
 

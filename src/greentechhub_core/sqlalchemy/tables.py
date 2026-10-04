@@ -1,5 +1,5 @@
-"""sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts, gth_notifications and
-gth_one_time_tokens tables, defined
+"""sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts, gth_notifications,
+gth_one_time_tokens and gth_audit_log tables, defined
 on a MetaData the service passes in so its own Alembic migrates them.
 
 Core holds no data and owns no engine: these functions only add Table
@@ -15,6 +15,7 @@ ROLE_GRANTS_TABLE = "gth_role_grants"
 LOGIN_ATTEMPTS_TABLE = "gth_login_attempts"
 NOTIFICATIONS_TABLE = "gth_notifications"
 ONE_TIME_TOKENS_TABLE = "gth_one_time_tokens"
+AUDIT_LOG_TABLE = "gth_audit_log"
 
 APP_SUBJECT = ""
 """The `subject` stored on APP rows. The column is part of the primary key,
@@ -135,4 +136,34 @@ def one_time_tokens_table(metadata: sa.MetaData) -> sa.Table:
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
         sa.Index("ix_gth_one_time_tokens_subject_purpose", "subject", "purpose"),
+    )
+
+
+def audit_log_table(metadata: sa.MetaData) -> sa.Table:
+    """gth_audit_log: one row per recorded action (audit.model).
+
+    id            32 hex characters
+    at            when it happened (indexed)
+    actor         who did it, or NULL for the system (indexed)
+    action        e.g. "stock.archived"
+    target_type, target_id   the record it touched, or NULL (indexed together)
+    summary       the timeline line
+    details       JSON
+    """
+    if AUDIT_LOG_TABLE in metadata.tables:
+        return metadata.tables[AUDIT_LOG_TABLE]
+    return sa.Table(
+        AUDIT_LOG_TABLE,
+        metadata,
+        sa.Column("id", sa.String(32), primary_key=True),
+        sa.Column("at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("actor", sa.String(255), nullable=True),
+        sa.Column("action", sa.String(128), nullable=False),
+        sa.Column("target_type", sa.String(64), nullable=True),
+        sa.Column("target_id", sa.String(255), nullable=True),
+        sa.Column("summary", sa.Text, nullable=False),
+        sa.Column("details", sa.JSON, nullable=False),
+        sa.Index("ix_gth_audit_log_at", "at"),
+        sa.Index("ix_gth_audit_log_actor", "actor"),
+        sa.Index("ix_gth_audit_log_target", "target_type", "target_id"),
     )

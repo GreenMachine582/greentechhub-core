@@ -80,6 +80,9 @@ greentechhub-core/
 │   │   ├── model.py               # Notification (toast()'s shape), new_notification, from_toast
 │   │   ├── store.py               # NotificationStore protocol + InMemoryNotificationStore
 │   │   └── preferences.py         # notification_preferences (per-category delivery settings), channels_for
+│   ├── audit/
+│   │   ├── model.py               # AuditEntry, new_entry (details scrubbed of credentials)
+│   │   └── store.py               # AuditStore protocol + InMemoryAuditStore
 │   ├── proxy/
 │   │   └── trusted_proxy.py
 │   ├── version.py
@@ -89,13 +92,14 @@ greentechhub-core/
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
 │   ├── sqlalchemy/                # optional `[sqlalchemy]` extra
-│   │   ├── tables.py              # settings/role_grants/login_attempts/notifications/one_time_tokens tables on the service's MetaData
+│   │   ├── tables.py              # settings/role_grants/login_attempts/notifications/one_time_tokens/audit_log tables on the service's MetaData
 │   │   ├── settings.py            # SQLAlchemySettingsStore
 │   │   ├── grants.py              # SQLAlchemyGrantStore
 │   │   ├── throttle.py            # SQLAlchemyAttemptStore
 │   │   ├── notifications.py       # SQLAlchemyNotificationStore
-│   │   └── one_time.py            # SQLAlchemyTokenStore
-│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings, throttle, notifications, one_time
+│   │   ├── one_time.py            # SQLAlchemyTokenStore
+│   │   └── audit.py               # SQLAlchemyAuditStore
+│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings, throttle, notifications, one_time, audit
 │   └── types/
 │       ├── common.py              # FlashMessage, Result, etc.
 │       └── errors.py              # ApplicationError and its HTTP-shaped subclasses (docs/modules.md#errors)
