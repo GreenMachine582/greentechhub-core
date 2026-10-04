@@ -119,6 +119,18 @@ def _resolve(sorts: Iterable[Sort], allowed: Mapping[str, Any]) -> list[ColumnEl
     return clauses
 
 
+# SQLModel's sessions subclass SQLAlchemy's and override execute() only to
+# add a DeprecationWarning steering callers to exec(), so going through the
+# subclass would warn on every page. These call SQLAlchemy's own execute(),
+# which SQLModel's override delegates to anyway: same result, no warning.
+async def _execute(session: AsyncSession, stmt: Select[Any]) -> Any:
+    return await AsyncSession.execute(session, stmt)
+
+
+def _execute_sync(session: Session, stmt: Select[Any]) -> Any:
+    return Session.execute(session, stmt)
+
+
 def _count(stmt: Select[Any]) -> Select[Any]:
     # The total ignores the statement's order (pointless to sort a count) and
     # any limit/offset already on it.
@@ -138,10 +150,10 @@ async def paginate(
     `scalars=True` (default) returns the first column of each row: the
     entity for a `select(Model)`, as an ORM page wants. Pass False for a
     multi-column select to get the rows. Works with SQLModel's AsyncSession,
-    which subclasses SQLAlchemy's.
+    which subclasses SQLAlchemy's, without its execute() DeprecationWarning.
     """
-    total = (await session.execute(_count(stmt))).scalar_one()
-    result = await session.execute(stmt.offset(offset).limit(limit))
+    total = (await _execute(session, _count(stmt))).scalar_one()
+    result = await _execute(session, stmt.offset(offset).limit(limit))
     return (result.scalars().all() if scalars else result.all()), total
 
 
@@ -154,8 +166,8 @@ def paginate_sync(
     scalars: bool = True,
 ) -> tuple[Sequence[Any], int]:
     """paginate() for a sync Session."""
-    total = session.execute(_count(stmt)).scalar_one()
-    result = session.execute(stmt.offset(offset).limit(limit))
+    total = _execute_sync(session, _count(stmt)).scalar_one()
+    result = _execute_sync(session, stmt.offset(offset).limit(limit))
     return (result.scalars().all() if scalars else result.all()), total
 
 

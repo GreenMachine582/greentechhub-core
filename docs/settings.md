@@ -3,7 +3,8 @@
 # ⚙️ Settings and Role Resolution
 
 > **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
-> the `Settings` facade, secret settings, the landing-page and site-banner factories and the SQLAlchemy storage tables have all shipped.
+> the `Settings` facade, secret settings, the landing-page, site-banner and self-signup factories (and notification delivery preferences, see
+> [modules.md](modules.md#delivery-preferences)) and the SQLAlchemy storage tables have all shipped.
 > The adapter work that builds on them is tracked in the fastapi and ui repos' TODOs.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
@@ -170,6 +171,28 @@ registry = SettingsRegistry([
   template as greentechhub-ui's `site_banners` (greentechhub-fastapi's opt-in site banner); ui renders the strip
   above the navbar.
 
+### Self-signup
+
+| Factory | Key | Type | Default | Group |
+|---|---|---|---|---|
+| `self_signup_setting(*, default=True, edit_permission=None, group="Sign-up", label=..., help_text=...)` | `auth.self_signup` (`SELF_SIGNUP_KEY`) | bool | `True` (open) | Sign-up |
+
+```python
+from greentechhub_core.settings.builtins import USER_PREFERENCES, self_signup_setting
+
+registry = SettingsRegistry([
+    *USER_PREFERENCES,
+    self_signup_setting(edit_permission="settings.manage"),   # default=False for invite-only
+])
+```
+
+- Whether visitors may create their own account: APP scope, one switch for the site, open by default like
+  greentechhub-fastapi's `RegisterViews`.
+- A factory for the same reason as the site banner: the permission that may change it is the service's own.
+- The split across the repos: core defines the setting; greentechhub-fastapi's `RegisterViews.is_open` reads it and
+  answers 404 on the sign-up routes while it's off; greentechhub-ui's sign-in page shows "Create one" only when the
+  view passes `register_url`.
+
 ## Settings stores and facade (shipped)
 
 | Piece | Shape |
@@ -274,10 +297,18 @@ importing it raises `ImportError` naming the extra; nothing else in core imports
 |---|---|
 | `settings_table(metadata)` | `gth_settings`: `scope`, `subject` (`""` for app rows), `key` (together the primary key), `value` (JSON), `updated_at` |
 | `role_grants_table(metadata)` | `gth_role_grants`: `subject`, `role` (together the primary key), `granted_at` |
+| `login_attempts_table(metadata)` | `gth_login_attempts`: `key` (the primary key), `failures`, `window_start`, `locked_until` (see [modules.md](modules.md#login-throttling)) |
+| `one_time_tokens_table(metadata)` | `gth_one_time_tokens`: `token_hash` (the primary key; SHA-256 of the token), `purpose`, `subject`, `created_at`, `expires_at`, `used_at`, indexed on (`subject`, `purpose`) (see [modules.md](modules.md#single-use-tokens)) |
+| `audit_log_table(metadata)` | `gth_audit_log`: `id` (the primary key), `at`, `actor`, `action`, `target_type`, `target_id`, `summary`, `details` (JSON), indexed on `at`, `actor` and (`target_type`, `target_id`) (see [modules.md](modules.md#audit-log)) |
+| `notifications_table(metadata)` | `gth_notifications`: `id` (the primary key), `recipient`, `category`, `kind`, `title`, `message`, `icon`, `action_label`, `action_url`, `created_at`, `read_at`, indexed on (`recipient`, `read_at`) (see [modules.md](modules.md#notifications)) |
 | `SQLAlchemySettingsStore(table, ...)` | A `SettingsStore` over `gth_settings` |
 | `SQLAlchemyGrantStore(table, ...)` | A `GrantStore` over `gth_role_grants` |
+| `SQLAlchemyAttemptStore(table, ...)` | An `AttemptStore` over `gth_login_attempts`, for `LoginThrottle` |
+| `SQLAlchemyNotificationStore(table, ...)` | A `NotificationStore` over `gth_notifications` |
+| `SQLAlchemyTokenStore(table, ...)` | A `TokenStore` over `gth_one_time_tokens`, for `OneTimeTokens` |
+| `SQLAlchemyAuditStore(table, ...)` | An `AuditStore` over `gth_audit_log` |
 
-Both stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
+All six stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
 `async_sessionmaker`, for the async ones), or both. Calling a method whose factory wasn't given raises
 `RuntimeError`. Each call runs in its own transaction.
 
@@ -304,14 +335,17 @@ settings = Settings(registry, SQLAlchemySettingsStore(settings_rows, async_sessi
 
 **Alembic recipe.** The tables are ordinary `Table`s on your metadata, so migrations are the usual autogenerate:
 
-1. Call `settings_table`/`role_grants_table` in a module your `env.py` imports before it reads `target_metadata`
+1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`audit_log_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
    (calling them again on the same metadata returns the existing table, so the app and `env.py` can both call them).
-2. `alembic revision --autogenerate -m "gth settings and role grants"` detects both tables.
+2. `alembic revision --autogenerate -m "gth settings and role grants"` detects them.
 3. Review the revision and `alembic upgrade head`.
 
 - `value` is SQLAlchemy's `JSON` type, so bools, ints and strings read back with their types on SQLite and
   PostgreSQL alike.
 - `set` is an update, then an insert if no row matched, which works on every backend. A concurrent insert of the
   same row is retried once as an update. A concurrent `assign` of the same grant is treated as already assigned.
+- An attempt store's `hit` raises the count in the database (`failures = failures + 1`), so simultaneous failures
+  all count; a first failure whose insert loses a race is retried once as that increment. SQLite returns its
+  datetimes without a zone; the store reads them back as UTC.
 - Both stores pass `SettingsStoreContract` / `GrantStoreContract`, run against SQLite with sync and `aiosqlite`
   sessions.

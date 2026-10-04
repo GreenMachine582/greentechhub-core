@@ -8,6 +8,9 @@
 
 ## 🗺️ Milestones
 
+Cross-repo order (with greentechhub-fastapi and greentechhub-ui): Accounts (M1) → Notifications & email (M2) →
+consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.0.
+
 ### Identity
 - [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
   JWKS. Worth doing once a service runs behind Authentik with JWT forwarding on
@@ -17,11 +20,24 @@
   ([docs/modules.md](docs/modules.md#observability)). `get_resource_attributes` shipped ahead of it
 
 ### Parked — until a consumer asks
-- Notifications: a notification model, store and delivery preferences, for greentechhub-ui's planned notification
-  centre (the `toast()` payload is the message shape)
-- An audit/activity log (who did what, when) for greentechhub-ui's planned `gth_timeline`
 - A currency setting: greentechhub-ui's `money` filter takes its symbol per call (default `$`); a shared
   `locale.currency` would let a user's or app's setting drive it
+
+### Ideas — not scheduled
+Core's share of ideas for more shared features; each pairs with a greentechhub-fastapi view and a greentechhub-ui
+template (their TODOs list those halves).
+- A settings-backed `FeatureFlagProvider` next to the env/file one, so flags can be toggled per app, user or group
+- A job scheduler on `Lock`/`FileLock` that records each run (status, duration, output) — BottleBot scrapes,
+  PyFinBot syncs
+- Personal API tokens — a hashed token store with permission scopes and last-used time, on `generate_token`
+- A `FileStore` protocol for attachments (local disk first, then S3/MinIO)
+- A shared tags/labels model
+- Webhooks — outbound (signed payloads, retries, a delivery log) and inbound (a signed payload becomes an
+  `EventBus` event)
+- More notification channels: ntfy or Gotify for self-hosted push, and Discord
+- Prometheus metrics from the timing middleware and job runs
+- A `greentechhub-testing` pytest plugin — `client_as(persona)`, fake identity/grant/settings stores, an htmx
+  request helper
 
 ### v1.0 — Validated in production
 - [ ] Both adapter packages consuming this package
@@ -30,4 +46,6 @@
 - [ ] Contract-test suite ([docs/testing.md](docs/testing.md)) has caught at least one real drift
 
 ### Post-v1.0
-- [ ] `gth` CLI ([docs/modules.md](docs/modules.md#cli-not-v1-worth-leaving-room-for))
+- [ ] `gth` CLI ([docs/modules.md](docs/modules.md#cli-not-v1-worth-leaving-room-for)) — `gth new` (scaffold a
+  FastAPI app with every `register_*`, the ui shell, SQLAlchemy stores, a Dockerfile and release-please) first,
+  then `gth users create-admin`, `gth settings get/set`, `gth flags`, `gth jobs run`

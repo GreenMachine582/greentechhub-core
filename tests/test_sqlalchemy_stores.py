@@ -6,15 +6,27 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from greentechhub_core.contracts.audit import AuditStoreContract
+from greentechhub_core.contracts.notifications import NotificationStoreContract
+from greentechhub_core.contracts.one_time import TokenStoreContract
 from greentechhub_core.contracts.permissions import GrantStoreContract
 from greentechhub_core.contracts.settings import SettingsStoreContract
+from greentechhub_core.contracts.throttle import AttemptStoreContract
 from greentechhub_core.identity.models import Identity
 from greentechhub_core.permissions import Permission, Role, RoleResolver
 from greentechhub_core.settings import Settings, SettingScope, SettingsRegistry
 from greentechhub_core.settings.builtins import USER_PREFERENCES
 from greentechhub_core.sqlalchemy import (
+    SQLAlchemyAttemptStore,
+    SQLAlchemyAuditStore,
     SQLAlchemyGrantStore,
+    SQLAlchemyNotificationStore,
     SQLAlchemySettingsStore,
+    SQLAlchemyTokenStore,
+    audit_log_table,
+    login_attempts_table,
+    notifications_table,
+    one_time_tokens_table,
     role_grants_table,
     settings_table,
 )
@@ -27,7 +39,9 @@ def db(tmp_path):
     asyncio.run() in the tests is a fresh event loop."""
     url = f"sqlite:///{tmp_path / 'test.db'}"
     metadata = sa.MetaData()
-    tables = settings_table(metadata), role_grants_table(metadata)
+    tables = (settings_table(metadata), role_grants_table(metadata), login_attempts_table(metadata),
+              notifications_table(metadata), one_time_tokens_table(metadata),
+              audit_log_table(metadata))
     engine = sa.create_engine(url)
     metadata.create_all(engine)
     async_engine = create_async_engine(
@@ -36,6 +50,10 @@ def db(tmp_path):
     yield {
         "settings": tables[0],
         "grants": tables[1],
+        "attempts": tables[2],
+        "notifications": tables[3],
+        "tokens": tables[4],
+        "audit": tables[5],
         "session_factory": sessionmaker(engine),
         "async_session_factory": async_sessionmaker(async_engine),
     }
@@ -57,6 +75,30 @@ class TestSQLAlchemyGrantStoreContract(GrantStoreContract):
     @pytest.fixture
     def store(self, db) -> SQLAlchemyGrantStore:
         return SQLAlchemyGrantStore(db["grants"], **_factories(db))
+
+
+class TestSQLAlchemyNotificationStoreContract(NotificationStoreContract):
+    @pytest.fixture
+    def store(self, db) -> SQLAlchemyNotificationStore:
+        return SQLAlchemyNotificationStore(db["notifications"], **_factories(db))
+
+
+class TestSQLAlchemyTokenStoreContract(TokenStoreContract):
+    @pytest.fixture
+    def store(self, db) -> SQLAlchemyTokenStore:
+        return SQLAlchemyTokenStore(db["tokens"], **_factories(db))
+
+
+class TestSQLAlchemyAuditStoreContract(AuditStoreContract):
+    @pytest.fixture
+    def store(self, db) -> SQLAlchemyAuditStore:
+        return SQLAlchemyAuditStore(db["audit"], **_factories(db))
+
+
+class TestSQLAlchemyAttemptStoreContract(AttemptStoreContract):
+    @pytest.fixture
+    def store(self, db) -> SQLAlchemyAttemptStore:
+        return SQLAlchemyAttemptStore(db["attempts"], **_factories(db))
 
 
 # tables
@@ -155,3 +197,28 @@ def test_secret_settings_are_ciphertext_in_the_table(db):
     with db["session_factory"]() as session:
         rows = [str(v) for v in session.execute(sa.select(db["settings"].c.value)).scalars()]
     assert rows and not any("hunter2" in v for v in rows)
+
+
+def test_attempt_hit_retries_when_a_concurrent_insert_wins(db, monkeypatch):
+    """Two first failures for one key at once: the loser's INSERT hits the
+    primary key, so it retries and counts on the winner's row."""
+    from datetime import UTC, datetime, timedelta
+
+    store = SQLAlchemyAttemptStore(db["attempts"], **_factories(db))
+    now, window = datetime(2026, 1, 1, tzinfo=UTC), timedelta(minutes=15)
+    store.hit_sync("k", now, window)  # the "concurrent" winner, already committed
+
+    real_record = SQLAlchemyAttemptStore._record
+    misses = {"left": 0}  # how many reads still come back as "no row yet"
+
+    def stale_read(row):
+        if misses["left"] and row is not None:
+            misses["left"] -= 1
+            return None
+        return real_record(row)
+
+    monkeypatch.setattr(SQLAlchemyAttemptStore, "_record", staticmethod(stale_read))
+    misses["left"] = 1
+    assert store.hit_sync("k", now, window).failures == 2
+    misses["left"] = 1
+    assert asyncio.run(store.hit("k", now, window)).failures == 3
