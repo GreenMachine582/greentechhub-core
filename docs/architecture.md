@@ -77,7 +77,8 @@ greentechhub-core/
 │   │   └── throttle.py            # LoginThrottle + AttemptStore protocol + InMemoryAttemptStore
 │   ├── notifications/
 │   │   ├── model.py               # Notification (toast()'s shape), new_notification, from_toast
-│   │   └── store.py               # NotificationStore protocol + InMemoryNotificationStore
+│   │   ├── store.py               # NotificationStore protocol + InMemoryNotificationStore
+│   │   └── preferences.py         # notification_preferences (per-category delivery settings), channels_for
 │   ├── proxy/
 │   │   └── trusted_proxy.py
 │   ├── version.py

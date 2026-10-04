@@ -81,8 +81,35 @@ latest = await store.list_for(user.subject, limit=10)      # the panel
 await store.mark_all_read(user.subject, at=datetime.now(UTC))
 ```
 
-The split across the repos: core holds the model and the stores; greentechhub-fastapi adds the routes and a
-`notify(user, toast_payload)` helper; greentechhub-ui draws the bell and the panel.
+### Delivery preferences
+
+Each person chooses how each kind of notice reaches them: in the app, by email, both, or not at all.
+`notification_preferences(categories)` makes one USER choice setting per category, keyed `notify.<category>`, with
+the choices `in_app`, `email`, `both` and `off` (`DELIVERY_CHOICES`). The default is `in_app`; pass `default=` for
+another. They're ordinary core settings, so the settings page shows them under a "Notifications" heading with no
+extra UI. `categories` is the service's own: category → label, `(category, label)` pairs, or bare names
+(`"price_alert"` is labelled "Price alert").
+
+```python
+from greentechhub_core.notifications import channels_for, notification_preferences
+
+registry = SettingsRegistry([
+    *USER_PREFERENCES,
+    *notification_preferences({"sync": "Sync results", "deals": "Deals found"}),
+])
+
+channels = await channels_for(settings, user, "sync")   # frozenset of "in_app" / "email"
+if "in_app" in channels:
+    await store.add(new_notification(user.subject, "ASX sync finished", category="sync"))
+```
+
+`channels_for(settings, identity, category)` (and `channels_for_sync`) is the check a sender makes: the person's own
+choice, else the app's, else the default. A category with no registered preference goes in-app, so an unplanned one
+is never dropped. `delivery_channels(choice)` maps one choice to its channels.
+
+The split across the repos: core holds the model, the stores and the preferences; greentechhub-fastapi adds the
+routes and a `notify(user, toast_payload)` helper that checks `channels_for`; greentechhub-ui draws the bell and the
+panel.
 
 ## Proxy
 
