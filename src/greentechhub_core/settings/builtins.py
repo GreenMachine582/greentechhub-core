@@ -225,3 +225,36 @@ def site_banner_settings(
             edit_permission=edit_permission,
         ),
     )
+
+
+SELF_SIGNUP_KEY = "auth.self_signup"
+"""The key self_signup_setting registers under, for an adapter's sign-up
+views to read."""
+
+
+def self_signup_setting(
+    *,
+    default: bool = True,
+    edit_permission: str | None = None,
+    group: str = "Sign-up",
+    label: str = "Allow sign-up",
+    help_text: str = "Let visitors create their own account. Turn off to add users yourself.",
+) -> Setting:
+    """An APP-scope switch for self-service sign-up, keyed SELF_SIGNUP_KEY.
+
+    Open by default, like greentechhub-fastapi's RegisterViews; pass
+    `default=False` for an invite-only service. `edit_permission` gates
+    changing it, e.g. the service's own "settings.manage". Acting on the
+    value (closing the sign-up routes, hiding the sign-in page's link) is
+    the adapter's or service's job.
+    """
+    return Setting(
+        key=SELF_SIGNUP_KEY,
+        type=SettingType.BOOL,
+        default=default,
+        scope=SettingScope.APP,
+        label=label,
+        help_text=help_text,
+        group=group,
+        edit_permission=edit_permission,
+    )
