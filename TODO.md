@@ -12,9 +12,6 @@ Cross-repo order (with greentechhub-fastapi and greentechhub-ui): Accounts (M1) 
 consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.0.
 
 ### Notifications & email (M2)
-- [ ] Notifications — a notification model and a `NotificationStore` protocol (in-memory/JSON + SQLAlchemy, like
-  settings and grants) with contract tests, for greentechhub-ui's notification centre; the `toast()` payload is
-  the message shape, so a notice can be a toast now and a stored entry later
 - [ ] Delivery preferences as user settings — in-app and/or email per notification category
 - [ ] Expiring, single-use tokens for password reset and email verification, built on `generate_token` and storing
   only the hash

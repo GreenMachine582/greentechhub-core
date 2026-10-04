@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from greentechhub_core.contracts.notifications import NotificationStoreContract
 from greentechhub_core.contracts.permissions import GrantStoreContract
 from greentechhub_core.contracts.settings import SettingsStoreContract
 from greentechhub_core.contracts.throttle import AttemptStoreContract
@@ -16,8 +17,10 @@ from greentechhub_core.settings.builtins import USER_PREFERENCES
 from greentechhub_core.sqlalchemy import (
     SQLAlchemyAttemptStore,
     SQLAlchemyGrantStore,
+    SQLAlchemyNotificationStore,
     SQLAlchemySettingsStore,
     login_attempts_table,
+    notifications_table,
     role_grants_table,
     settings_table,
 )
@@ -30,7 +33,8 @@ def db(tmp_path):
     asyncio.run() in the tests is a fresh event loop."""
     url = f"sqlite:///{tmp_path / 'test.db'}"
     metadata = sa.MetaData()
-    tables = settings_table(metadata), role_grants_table(metadata), login_attempts_table(metadata)
+    tables = (settings_table(metadata), role_grants_table(metadata), login_attempts_table(metadata),
+              notifications_table(metadata))
     engine = sa.create_engine(url)
     metadata.create_all(engine)
     async_engine = create_async_engine(
@@ -40,6 +44,7 @@ def db(tmp_path):
         "settings": tables[0],
         "grants": tables[1],
         "attempts": tables[2],
+        "notifications": tables[3],
         "session_factory": sessionmaker(engine),
         "async_session_factory": async_sessionmaker(async_engine),
     }
@@ -61,6 +66,12 @@ class TestSQLAlchemyGrantStoreContract(GrantStoreContract):
     @pytest.fixture
     def store(self, db) -> SQLAlchemyGrantStore:
         return SQLAlchemyGrantStore(db["grants"], **_factories(db))
+
+
+class TestSQLAlchemyNotificationStoreContract(NotificationStoreContract):
+    @pytest.fixture
+    def store(self, db) -> SQLAlchemyNotificationStore:
+        return SQLAlchemyNotificationStore(db["notifications"], **_factories(db))
 
 
 class TestSQLAlchemyAttemptStoreContract(AttemptStoreContract):
