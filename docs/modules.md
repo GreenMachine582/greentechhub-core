@@ -155,7 +155,7 @@ record's history tab.
   `target` is `(type, id)`; the id is kept as a string. Details must be JSON-serialisable, and they're scrubbed on
   the way in: the value of any key that looks like a credential (the `password`, `token`, `secret`, `api_key`, … of
   `security.redact`), at any depth, becomes `***REDACTED***`, so an audit trail never holds one.
-- An `AuditStore` keeps them: `record(entry)`; `list(actor=, action=, target=, before=, limit=50)` (newest first;
+- An `AuditStore` keeps them: `record(entry)`; `entries(actor=, action=, target=, before=, limit=50)` (newest first;
   `action="stock."` with the trailing dot matches every stock action; `target=("stock", None)` every stock;
   `before` pages back); and `prune(before)` for retention. Each has a `_sync` twin.
 - `InMemoryAuditStore` for tests and single-process tools; `SQLAlchemyAuditStore` over `gth_audit_log`
@@ -167,8 +167,8 @@ from greentechhub_core.audit import new_entry
 await audit.record(new_entry("stock.archived", actor=user.subject, target=("stock", stock.id),
                              summary=f"Archived {stock.market}:{stock.symbol}",
                              details={"before": {"is_active": True}, "after": {"is_active": False}}))
-history = await audit.list(target=("stock", stock.id))      # a record's history, newest first
-activity = await audit.list(action="stock.", limit=20)      # the stocks timeline
+history = await audit.entries(target=("stock", stock.id))      # a record's history, newest first
+activity = await audit.entries(action="stock.", limit=20)      # the stocks timeline
 ```
 
 The split across the repos: services record entries where they change data; greentechhub-ui's `gth_timeline` renders

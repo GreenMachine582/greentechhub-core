@@ -1,7 +1,7 @@
 """sqlalchemy.audit — SQLAlchemyAuditStore: an AuditStore (audit.store) over
 the gth_audit_log table (tables.audit_log_table).
 
-Each call runs in its own transaction; list() turns its filters into WHERE
+Each call runs in its own transaction; entries() turns its filters into WHERE
 clauses (an action prefix into a LIKE), so filtering happens in the
 database.
 """
@@ -90,7 +90,7 @@ class SQLAlchemyAuditStore:
         with self._sessions.sync() as session, session.begin():
             session.execute(self._insert(entry))
 
-    def list_sync(
+    def entries_sync(
         self,
         *,
         actor: str | None = None,
@@ -113,7 +113,7 @@ class SQLAlchemyAuditStore:
         async with self._sessions.async_() as session, session.begin():
             await session.execute(self._insert(entry))
 
-    async def list(
+    async def entries(
         self,
         *,
         actor: str | None = None,

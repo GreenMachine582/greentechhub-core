@@ -13,7 +13,7 @@ from greentechhub_core.audit.model import AuditEntry
 from greentechhub_core.security.throttle import aware
 
 Target = tuple[str, str | None]
-"""A list() target filter: (type, id), or (type, None) for every record of that type."""
+"""An entries() target filter: (type, id), or (type, None) for every record of that type."""
 
 
 class AuditStore(Protocol):
@@ -21,7 +21,7 @@ class AuditStore(Protocol):
     async method plus a `_sync` twin.
 
     Semantics every implementation keeps (AuditStoreContract asserts them):
-      - `list` returns entries newest first (by `at`, then id), at most
+      - `entries` returns them newest first (by `at`, then id), at most
         `limit`, filtered by every argument given: `actor`; `action` exactly,
         or as a prefix when it ends in "." ("stock." → every stock action);
         `target` (type, id) or (type, None); and `before` (strictly older),
@@ -34,7 +34,7 @@ class AuditStore(Protocol):
 
     def record_sync(self, entry: AuditEntry) -> None: ...
 
-    async def list(
+    async def entries(
         self,
         *,
         actor: str | None = None,
@@ -44,7 +44,7 @@ class AuditStore(Protocol):
         limit: int = 50,
     ) -> list[AuditEntry]: ...
 
-    def list_sync(
+    def entries_sync(
         self,
         *,
         actor: str | None = None,
@@ -67,7 +67,7 @@ def matches(
     target: Target | None = None,
     before: datetime | None = None,
 ) -> bool:
-    """Whether `entry` passes list()'s filters — the rule every store follows."""
+    """Whether `entry` passes entries()'s filters — the rule every store follows."""
     if actor is not None and entry.actor != actor:
         return False
     if action is not None:
@@ -86,7 +86,7 @@ def matches(
 
 
 def newest_first(entries: Iterable[AuditEntry]) -> list[AuditEntry]:
-    """`entries` in list() order."""
+    """`entries` in entries() order."""
     return sorted(entries, key=lambda e: (aware(e.at), e.id), reverse=True)
 
 
@@ -102,7 +102,7 @@ class InMemoryAuditStore:
         with self._lock:
             self._entries.append(replace(entry, at=aware(entry.at)))
 
-    def list_sync(
+    def entries_sync(
         self,
         *,
         actor: str | None = None,
@@ -129,7 +129,7 @@ class InMemoryAuditStore:
     async def record(self, entry: AuditEntry) -> None:
         self.record_sync(entry)
 
-    async def list(
+    async def entries(
         self,
         *,
         actor: str | None = None,
@@ -138,7 +138,9 @@ class InMemoryAuditStore:
         before: datetime | None = None,
         limit: int = 50,
     ) -> list[AuditEntry]:
-        return self.list_sync(actor=actor, action=action, target=target, before=before, limit=limit)
+        return self.entries_sync(
+            actor=actor, action=action, target=target, before=before, limit=limit
+        )
 
     async def prune(self, before: datetime) -> int:
         return self.prune_sync(before)
