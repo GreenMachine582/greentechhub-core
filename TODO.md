@@ -12,7 +12,6 @@ Cross-repo order (with greentechhub-fastapi and greentechhub-ui): Accounts (M1) 
 consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.0.
 
 ### Notifications & email (M2)
-- [ ] Delivery preferences as user settings — in-app and/or email per notification category
 - [ ] Expiring, single-use tokens for password reset and email verification, built on `generate_token` and storing
   only the hash
 - [ ] Then: an audit/activity log (who did what, when) feeding greentechhub-ui's `gth_timeline` and, later, record
