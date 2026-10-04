@@ -1,4 +1,5 @@
-"""sqlalchemy.tables — the gth_settings, gth_role_grants and gth_login_attempts tables, defined
+"""sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts and gth_notifications
+tables, defined
 on a MetaData the service passes in so its own Alembic migrates them.
 
 Core holds no data and owns no engine: these functions only add Table
@@ -12,6 +13,7 @@ import sqlalchemy as sa
 SETTINGS_TABLE = "gth_settings"
 ROLE_GRANTS_TABLE = "gth_role_grants"
 LOGIN_ATTEMPTS_TABLE = "gth_login_attempts"
+NOTIFICATIONS_TABLE = "gth_notifications"
 
 APP_SUBJECT = ""
 """The `subject` stored on APP rows. The column is part of the primary key,
@@ -79,4 +81,33 @@ def login_attempts_table(metadata: sa.MetaData) -> sa.Table:
         sa.Column("failures", sa.Integer, nullable=False),
         sa.Column("window_start", sa.DateTime(timezone=True), nullable=False),
         sa.Column("locked_until", sa.DateTime(timezone=True), nullable=True),
+    )
+
+
+def notifications_table(metadata: sa.MetaData) -> sa.Table:
+    """gth_notifications: one row per stored notification (notifications.model).
+
+    id            32 hex characters
+    recipient     the person's subject (indexed, with read_at)
+    category, kind, title, message, icon, action_label, action_url
+    created_at
+    read_at       when it was marked read, or NULL
+    """
+    if NOTIFICATIONS_TABLE in metadata.tables:
+        return metadata.tables[NOTIFICATIONS_TABLE]
+    return sa.Table(
+        NOTIFICATIONS_TABLE,
+        metadata,
+        sa.Column("id", sa.String(32), primary_key=True),
+        sa.Column("recipient", sa.String(255), nullable=False),
+        sa.Column("category", sa.String(64), nullable=False),
+        sa.Column("kind", sa.String(16), nullable=False),
+        sa.Column("title", sa.String(255), nullable=True),
+        sa.Column("message", sa.Text, nullable=False),
+        sa.Column("icon", sa.String(64), nullable=True),
+        sa.Column("action_label", sa.String(255), nullable=True),
+        sa.Column("action_url", sa.String(2048), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("read_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Index("ix_gth_notifications_recipient_read_at", "recipient", "read_at"),
     )

@@ -1,5 +1,6 @@
 """greentechhub_core.sqlalchemy — SQLAlchemy-backed SettingsStore,
-GrantStore and AttemptStore (docs/settings.md#storage-tables-shipped-sqlalchemy-extra), and
+GrantStore, AttemptStore and NotificationStore
+(docs/settings.md#storage-tables-shipped-sqlalchemy-extra), and
 filtering, sorting and paging helpers for a service's own selects (docs/query.md#sqlalchemy),
 behind the optional `[sqlalchemy]` extra.
 
@@ -8,7 +9,7 @@ naming the extra. Nothing else in core imports it, so core itself keeps no
 required SQLAlchemy dependency.
 
 The one place in core that joins top-level modules (settings/,
-permissions/ and security/) on purpose, the way contracts/ does: it implements their
+permissions/, security/ and notifications/) on purpose, the way contracts/ does: it implements their
 protocols over the service's own database.
 """
 
@@ -20,6 +21,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
     ) from exc
 
 from greentechhub_core.sqlalchemy.grants import SQLAlchemyGrantStore
+from greentechhub_core.sqlalchemy.notifications import SQLAlchemyNotificationStore
 from greentechhub_core.sqlalchemy.query import (
     order_by,
     page,
@@ -31,9 +33,11 @@ from greentechhub_core.sqlalchemy.query import (
 from greentechhub_core.sqlalchemy.settings import SQLAlchemySettingsStore
 from greentechhub_core.sqlalchemy.tables import (
     LOGIN_ATTEMPTS_TABLE,
+    NOTIFICATIONS_TABLE,
     ROLE_GRANTS_TABLE,
     SETTINGS_TABLE,
     login_attempts_table,
+    notifications_table,
     role_grants_table,
     settings_table,
 )
@@ -41,10 +45,12 @@ from greentechhub_core.sqlalchemy.throttle import SQLAlchemyAttemptStore
 
 __all__ = [
     "LOGIN_ATTEMPTS_TABLE",
+    "NOTIFICATIONS_TABLE",
     "ROLE_GRANTS_TABLE",
     "SETTINGS_TABLE",
     "SQLAlchemyAttemptStore",
     "SQLAlchemyGrantStore",
+    "SQLAlchemyNotificationStore",
     "SQLAlchemySettingsStore",
     "order_by",
     "page",
@@ -52,6 +58,7 @@ __all__ = [
     "paginate",
     "paginate_sync",
     "login_attempts_table",
+    "notifications_table",
     "role_grants_table",
     "settings_table",
     "where",

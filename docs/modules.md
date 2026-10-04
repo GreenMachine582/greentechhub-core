@@ -1,6 +1,6 @@
 [← Back to README](../README.md)
 
-# 🧩 Feature Flags, Observability, Security, Proxy, Errors, Dates, Background, CLI
+# 🧩 Feature Flags, Observability, Security, Notifications, Proxy, Errors, Dates, Background, CLI
 
 The smaller modules that don't warrant their own doc yet — see [docs/identity.md](identity.md), [docs/permissions.md](permissions.md), [docs/settings.md](settings.md), [docs/events.md](events.md), [docs/query.md](query.md), and [docs/health.md](health.md) for the higher-detail ones.
 
@@ -50,6 +50,39 @@ else:
 ```
 
 Showing the error and the `Retry-After` header is the adapter's job (greentechhub-fastapi's login views).
+
+## Notifications
+
+`notifications/` stores notices per person for greentechhub-ui's notification centre (the navbar bell and panel).
+A `Notification` is greentechhub-ui's `toast()` message as data: `message`, `kind` (`success`, `info`, `warning`,
+`danger`, `neutral`; `warn` and `error` are aliases), and optionally `title`, `icon`, an action link
+(`action_label`, `action_url`) and a `category` for delivery preferences. It also has `recipient` (an
+`Identity.subject`), `created_at` and `read_at`. Presentation-only toast keys (`duration`, `variant`) aren't stored.
+
+- `new_notification(recipient, message, *, kind="info", title=None, icon=None, action=None, category="general")` makes
+  one with a fresh id; `from_toast(recipient, payload)` takes a `toast()` detail, or the whole `{"showToast": ...}`
+  trigger, so a notice can be a toast now and a stored entry later. `notification.to_toast()` goes back the other
+  way.
+- A `NotificationStore` keeps them: `add`, `list_for(recipient, unread_only=False, limit=50)` (newest first),
+  `unread_count`, `mark_read(recipient, ids, at=)`, `mark_all_read(recipient, at=)` and `prune(before)`, each with a
+  `_sync` twin. Every call is scoped to one recipient, so marking someone else's notification read is a no-op.
+  `prune` deletes only read notifications, so nothing unseen disappears.
+- `InMemoryNotificationStore` for tests and single-process tools; `SQLAlchemyNotificationStore` over
+  `gth_notifications` (`[sqlalchemy]` extra, see [settings.md](settings.md#storage-tables-shipped-sqlalchemy-extra))
+  for a service's database. `NotificationStoreContract` checks any implementation.
+
+```python
+from greentechhub_core.notifications import from_toast, new_notification
+
+await store.add(new_notification(user.subject, "ASX sync failed", kind="danger",
+                                  action={"label": "Retry", "url": "/stocks"}, category="sync"))
+unread = await store.unread_count(user.subject)            # the bell's badge
+latest = await store.list_for(user.subject, limit=10)      # the panel
+await store.mark_all_read(user.subject, at=datetime.now(UTC))
+```
+
+The split across the repos: core holds the model and the stores; greentechhub-fastapi adds the routes and a
+`notify(user, toast_payload)` helper; greentechhub-ui draws the bell and the panel.
 
 ## Proxy
 
