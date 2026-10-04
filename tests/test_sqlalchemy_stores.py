@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from greentechhub_core.contracts.audit import AuditStoreContract
 from greentechhub_core.contracts.notifications import NotificationStoreContract
 from greentechhub_core.contracts.one_time import TokenStoreContract
 from greentechhub_core.contracts.permissions import GrantStoreContract
@@ -17,10 +18,12 @@ from greentechhub_core.settings import Settings, SettingScope, SettingsRegistry
 from greentechhub_core.settings.builtins import USER_PREFERENCES
 from greentechhub_core.sqlalchemy import (
     SQLAlchemyAttemptStore,
+    SQLAlchemyAuditStore,
     SQLAlchemyGrantStore,
     SQLAlchemyNotificationStore,
     SQLAlchemySettingsStore,
     SQLAlchemyTokenStore,
+    audit_log_table,
     login_attempts_table,
     notifications_table,
     one_time_tokens_table,
@@ -37,7 +40,8 @@ def db(tmp_path):
     url = f"sqlite:///{tmp_path / 'test.db'}"
     metadata = sa.MetaData()
     tables = (settings_table(metadata), role_grants_table(metadata), login_attempts_table(metadata),
-              notifications_table(metadata), one_time_tokens_table(metadata))
+              notifications_table(metadata), one_time_tokens_table(metadata),
+              audit_log_table(metadata))
     engine = sa.create_engine(url)
     metadata.create_all(engine)
     async_engine = create_async_engine(
@@ -49,6 +53,7 @@ def db(tmp_path):
         "attempts": tables[2],
         "notifications": tables[3],
         "tokens": tables[4],
+        "audit": tables[5],
         "session_factory": sessionmaker(engine),
         "async_session_factory": async_sessionmaker(async_engine),
     }
@@ -82,6 +87,12 @@ class TestSQLAlchemyTokenStoreContract(TokenStoreContract):
     @pytest.fixture
     def store(self, db) -> SQLAlchemyTokenStore:
         return SQLAlchemyTokenStore(db["tokens"], **_factories(db))
+
+
+class TestSQLAlchemyAuditStoreContract(AuditStoreContract):
+    @pytest.fixture
+    def store(self, db) -> SQLAlchemyAuditStore:
+        return SQLAlchemyAuditStore(db["audit"], **_factories(db))
 
 
 class TestSQLAlchemyAttemptStoreContract(AttemptStoreContract):
