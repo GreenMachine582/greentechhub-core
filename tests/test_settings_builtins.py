@@ -1,7 +1,15 @@
+import asyncio
+
 import pytest
 
 import greentechhub_core.settings as settings_pkg
-from greentechhub_core.settings import SettingScope, SettingsRegistry, SettingType
+from greentechhub_core.settings import (
+    InMemorySettingsStore,
+    Settings,
+    SettingScope,
+    SettingsRegistry,
+    SettingType,
+)
 from greentechhub_core.settings.builtins import (
     DATE_FORMAT,
     DENSITY,
@@ -9,6 +17,7 @@ from greentechhub_core.settings.builtins import (
     MOTION,
     NUMBER_FORMAT,
     PAGE_SIZE,
+    SELF_SIGNUP_KEY,
     SIDEBAR_DEFAULT,
     SITE_BANNER_KEY,
     SITE_BANNER_TONE_KEY,
@@ -18,6 +27,7 @@ from greentechhub_core.settings.builtins import (
     TIMEZONE,
     USER_PREFERENCES,
     landing_page_setting,
+    self_signup_setting,
     site_banner_settings,
 )
 
@@ -203,3 +213,31 @@ def test_site_banner_tone_accepts_only_the_banner_tones():
         tone.validate("danger")  # a toast kind, not a banner tone
     banner, _ = site_banner_settings()
     assert banner.validate("") == ""  # empty means no banner
+
+
+# self_signup_setting
+
+
+def test_self_signup_setting_has_the_documented_shape():
+    setting = self_signup_setting()
+    assert setting.key == SELF_SIGNUP_KEY == "auth.self_signup"
+    assert setting.type is SettingType.BOOL and setting.default is True
+    assert setting.scope is SettingScope.APP
+    assert setting.group == "Sign-up" and setting.label == "Allow sign-up"
+    assert setting.edit_permission is None
+
+
+def test_self_signup_setting_overrides():
+    setting = self_signup_setting(default=False, edit_permission="settings.manage",
+                                  group="Accounts", label="Open registration", help_text="")
+    assert setting.default is False
+    assert (setting.edit_permission, setting.group, setting.label, setting.help_text) == (
+        "settings.manage", "Accounts", "Open registration", "")
+
+
+def test_self_signup_setting_resolves_through_settings():
+    store = InMemorySettingsStore()
+    settings = Settings(SettingsRegistry([self_signup_setting()]), store)
+    assert asyncio.run(settings.get(SELF_SIGNUP_KEY, None)) is True
+    store.set_sync(SettingScope.APP, None, SELF_SIGNUP_KEY, False)
+    assert asyncio.run(settings.get(SELF_SIGNUP_KEY, None)) is False
