@@ -1,9 +1,10 @@
 import asyncio
+import warnings
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.pool import NullPool
 
 from greentechhub_core.query import to_envelope
@@ -94,6 +95,35 @@ def test_paginate_async_returns_a_page_and_the_total(db):
     items, total = asyncio.run(run())
     assert total == 12
     assert [p.id for p in items] == [11, 12]  # the last, short page
+
+
+class _WarningAsyncSession(AsyncSession):
+    """Like SQLModel's AsyncSession: execute() works but is deprecated."""
+
+    async def execute(self, *args, **kwargs):
+        warnings.warn("use exec()", DeprecationWarning, stacklevel=2)
+        return await super().execute(*args, **kwargs)
+
+
+class _WarningSession(Session):
+    def execute(self, *args, **kwargs):
+        warnings.warn("use exec()", DeprecationWarning, stacklevel=2)
+        return super().execute(*args, **kwargs)
+
+
+def test_paginate_skips_a_subclass_execute_warning(db):
+    async def run():
+        maker = async_sessionmaker(db["async"].kw["bind"], class_=_WarningAsyncSession)
+        async with maker() as session:
+            return await paginate(session, _stmt(), offset=0, limit=2)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        items, total = asyncio.run(run())
+        with sessionmaker(db["sync"].kw["bind"], class_=_WarningSession)() as session:
+            sync_items, sync_total = paginate_sync(session, _stmt(), offset=0, limit=2)
+    assert (total, [p.id for p in items]) == (12, [1, 2])
+    assert (sync_total, [p.id for p in sync_items]) == (12, [1, 2])
 
 
 def test_paginate_counts_the_filtered_rows_and_ignores_limits(db):
