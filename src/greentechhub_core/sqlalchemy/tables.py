@@ -1,5 +1,5 @@
-"""sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts and gth_notifications
-tables, defined
+"""sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts, gth_notifications and
+gth_one_time_tokens tables, defined
 on a MetaData the service passes in so its own Alembic migrates them.
 
 Core holds no data and owns no engine: these functions only add Table
@@ -14,6 +14,7 @@ SETTINGS_TABLE = "gth_settings"
 ROLE_GRANTS_TABLE = "gth_role_grants"
 LOGIN_ATTEMPTS_TABLE = "gth_login_attempts"
 NOTIFICATIONS_TABLE = "gth_notifications"
+ONE_TIME_TOKENS_TABLE = "gth_one_time_tokens"
 
 APP_SUBJECT = ""
 """The `subject` stored on APP rows. The column is part of the primary key,
@@ -110,4 +111,28 @@ def notifications_table(metadata: sa.MetaData) -> sa.Table:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("read_at", sa.DateTime(timezone=True), nullable=True),
         sa.Index("ix_gth_notifications_recipient_read_at", "recipient", "read_at"),
+    )
+
+
+def one_time_tokens_table(metadata: sa.MetaData) -> sa.Table:
+    """gth_one_time_tokens: one row per issued single-use token (security.one_time).
+
+    token_hash    SHA-256 hex of the token — the token itself is never stored
+    purpose       e.g. "password_reset"
+    subject       who it's for (indexed, with purpose)
+    created_at, expires_at
+    used_at       when it was redeemed, or NULL
+    """
+    if ONE_TIME_TOKENS_TABLE in metadata.tables:
+        return metadata.tables[ONE_TIME_TOKENS_TABLE]
+    return sa.Table(
+        ONE_TIME_TOKENS_TABLE,
+        metadata,
+        sa.Column("token_hash", sa.String(64), primary_key=True),
+        sa.Column("purpose", sa.String(64), nullable=False),
+        sa.Column("subject", sa.String(255), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Index("ix_gth_one_time_tokens_subject_purpose", "subject", "purpose"),
     )

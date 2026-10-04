@@ -9,7 +9,7 @@
 
 ## 🎯 Objective
 
-The framework-independent foundation every GreenTechHub-ecosystem service — FastAPI or Django, web app or CLI/worker — builds on: configuration, logging, identity and permission contracts, health-check logic, query/pagination/filtering contracts, an event bus abstraction, feature flags, observability setup, and shared security primitives. It contains no `import fastapi` or `import django` anywhere, and no database, cache, or deployment setup of its own — it's an installable library, not a service. SQLAlchemy is not a required dependency: the SQLAlchemy settings, grant, login-attempt and notification stores live behind the optional `[sqlalchemy]` extra, and the Fernet cipher for secret settings behind `[crypto]`.
+The framework-independent foundation every GreenTechHub-ecosystem service — FastAPI or Django, web app or CLI/worker — builds on: configuration, logging, identity and permission contracts, health-check logic, query/pagination/filtering contracts, an event bus abstraction, feature flags, observability setup, and shared security primitives. It contains no `import fastapi` or `import django` anywhere, and no database, cache, or deployment setup of its own — it's an installable library, not a service. SQLAlchemy is not a required dependency: the SQLAlchemy settings, grant, login-attempt, notification and single-use-token stores live behind the optional `[sqlalchemy]` extra, and the Fernet cipher for secret settings behind `[crypto]`.
 
 ## 🧩 Scope
 
@@ -26,7 +26,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `health` | Check primitives + a `HealthResult` type — `check_disk`/`check_database`/`check_external` ship today; `check_redis` lands when Redis is deployed for some other reason | [docs/health.md](docs/health.md) |
 | `query` | Framework-independent `Filter`, `FilterGroup`, `Operator`, `Sort`, `Page`, `PageRequest` types and the response envelope shape            | [docs/query.md](docs/query.md) |
 | `observability` | `resource.py`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) ships today; the full OTel `TracerProvider`/`MeterProvider`/exporter setup stays deferred until a collector exists | [docs/modules.md](docs/modules.md#observability) |
-| `security` | Password hashing, constant-time comparisons, secret redaction for logs, CSRF token generation, login throttling            | [docs/modules.md](docs/modules.md#security) |
+| `security` | Password hashing, constant-time comparisons, secret redaction for logs, CSRF token generation, login throttling, single-use link tokens | [docs/modules.md](docs/modules.md#security) |
 | `proxy` | Pure functions parsing/validating `X-Forwarded-*` headers against a trusted-IP allowlist                                   | [docs/modules.md](docs/modules.md#proxy) |
 | `version` | Reports installed `greentechhub-*` package versions + service version, for `/health`/`/version` and deploy debugging       | [docs/architecture.md](docs/architecture.md#package-layout) |
 | `dates` | Fiscal years: `fiscal_year`, `fiscal_year_bounds`, `fiscal_year_label` ("2024–25"), any start month (July by default) | [docs/modules.md](docs/modules.md#dates) |
