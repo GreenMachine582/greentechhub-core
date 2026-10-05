@@ -4,7 +4,8 @@
 
 > **Status: shipped.** Role resolution, setting definitions (with resolution and the built-ins), the settings stores,
 > the `Settings` facade, secret settings, the landing-page, site-banner and self-signup factories (and notification delivery preferences, see
-> [modules.md](modules.md#delivery-preferences)) and the SQLAlchemy storage tables have all shipped.
+> [modules.md](modules.md#delivery-preferences), and the mail server's `smtp_settings`, see [modules.md](modules.md#email)) and the
+> SQLAlchemy storage tables have all shipped.
 > The adapter work that builds on them is tracked in the fastapi and ui repos' TODOs.
 
 Services need two kinds of runtime settings, alongside the env-driven `GTHBaseSettings`:
@@ -243,13 +244,13 @@ rest and out of every read except one explicit call.
 
 ```python
 from greentechhub_core.settings import SECRET_SET, Setting, Settings, SettingScope, SettingType
-from greentechhub_core.settings.crypto import FernetCipher   # the [crypto] extra
+from greentechhub_core.settings.crypto import settings_cipher   # the [crypto] extra
 
 APP_PASSWORD = Setting(
     key="email.app_password", type=SettingType.STR, default="", scope=SettingScope.USER,
     label="App password", group="Email sync", secret=True,
 )
-settings = Settings(registry, store, cipher=FernetCipher(config.settings_cipher_key))
+settings = Settings(registry, store, cipher=settings_cipher(config))   # config: your GTHBaseSettings
 
 await settings.set_user(identity, "email.app_password", "abcd efgh")      # encrypted before the store
 await settings.get("email.app_password", identity)                        # SECRET_SET (None when unset)
@@ -262,6 +263,8 @@ await settings.reset_user(identity, "email.app_password")                 # remo
 | `Setting.secret` | `False` by default. Only a `str` setting with `default=""` can be secret, otherwise `ValueError` at definition time |
 | `SecretCipher` | Protocol: `encrypt(plaintext: str) -> str`, `decrypt(token: str) -> str` |
 | `FernetCipher(key)` | The shipped cipher, in `greentechhub_core.settings.crypto` behind the `[crypto]` extra (`cryptography`). `FernetCipher.generate_key()` makes a key |
+| `settings_cipher(config, *, context="gth-settings")` | A `FernetCipher` keyed by `settings_cipher_key(config)`: the config's `settings_cipher_key` (env `SETTINGS_CIPHER_KEY`, an optional `GTHBaseSettings` field), else a key derived from its `secret_key`, with a warning. Also in `settings.crypto` |
+| `derive_cipher_key(secret, *, context=...)` | The derivation: the urlsafe-base64 SHA-256 of `"<context>:<secret>"`. A service that derived its own key this way passes its `context` to keep it |
 | `SECRET_SET` | The marker reads return for a stored secret. Truthy, equal only to itself, and renders as `••••••••` |
 | `SecretDecryptError` | A `ValueError`: the stored value doesn't decrypt with this cipher (the key changed, or the value was tampered with) |
 | `Settings(..., cipher=)` | Required when the registry holds any secret setting |
@@ -281,8 +284,11 @@ await settings.reset_user(identity, "email.app_password")                 # remo
   as-is: in memory, the JSON file and the `gth_settings` table all hold ciphertext.
 
 **What it protects.** The value is encrypted at rest (a database dump, a backup, the JSON file) and never reaches a
-template. The key is config, not a setting: keep it in an env var or a secret manager, outside the settings store, and
-pass it to `FernetCipher` at startup. Anyone with the key and the store can decrypt.
+template. The key is config, not a setting: keep it in an env var (`SETTINGS_CIPHER_KEY`) or a secret manager, outside
+the settings store. `settings_cipher(config)` reads it at startup. Anyone with the key and the store can decrypt.
+Without `SETTINGS_CIPHER_KEY` the key is derived from `SECRET_KEY`, so a development setup needs one secret only, but
+then changing `SECRET_KEY` makes every saved secret unreadable. `settings_cipher` warns about that; set
+`SETTINGS_CIPHER_KEY` (`FernetCipher.generate_key()`) for any persistent deployment.
 
 **Changing the key** isn't handled: values written under the old key raise `SecretDecryptError` from `get_secret`
 (reads still show `SECRET_SET`). Have people re-enter them, or decrypt and re-`set` each value with both ciphers in a

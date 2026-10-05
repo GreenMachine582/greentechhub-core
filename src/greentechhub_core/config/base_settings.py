@@ -16,6 +16,11 @@ class GTHBaseSettings(BaseSettings):
     (``SECRET_KEY``) — and subclasses remain free to declare their own
     SCREAMING_CASE fields (e.g. ``ASYNC_DATABASE_URL``) without losing that
     matching.
+
+    ``settings_cipher_key`` (``SETTINGS_CIPHER_KEY``) is the Fernet key that
+    encrypts secret settings at rest. It's optional: left empty,
+    settings.crypto.settings_cipher derives one from ``secret_key`` (with a
+    warning), so a development setup needs only one secret.
     """
 
     model_config = SettingsConfigDict(
@@ -26,3 +31,4 @@ class GTHBaseSettings(BaseSettings):
 
     secret_key: str
     log_level: str = "INFO"
+    settings_cipher_key: str = ""

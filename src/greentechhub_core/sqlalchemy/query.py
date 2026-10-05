@@ -33,8 +33,8 @@ def where(
     contains / starts_with / ends_with are case-insensitive and match `%`,
     `_` and `\\` literally. in / not_in take a list (a single value is
     wrapped); is_null takes a bool (False means IS NOT NULL). Values are
-    compared as given: converting query-string text to the column's type is
-    the caller's job.
+    compared as given: run client filters through query.validate_filters
+    first, which checks them and converts text to numbers, dates and bools.
     """
     return _combine("and", filters, allowed)
 

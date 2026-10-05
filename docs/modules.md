@@ -142,6 +142,44 @@ The split across the repos: core holds the model, the stores and the preferences
 routes and a `notify(user, toast_payload)` helper that checks `channels_for`; greentechhub-ui draws the bell and the
 panel.
 
+## Email
+
+`email/` composes and sends email with the standard library only (no extra needed). greentechhub-fastapi's planned
+`register_email` wires it into notifications and the account emails (password reset, email verification).
+
+- `EmailMessage(to=..., subject=..., text=..., html=None, reply_to=None, sender=None)` is checked when it's made: at
+  least one recipient, a subject and a plain-text body, addresses with `@`, and no line break in any header field, so
+  a value from a form can't add headers. `new_email(to, subject, text, ...)` takes one address or several.
+  `message.to_mime(default_sender)` gives the standard-library message: plain text, or multipart/alternative with
+  `html`.
+- An `EmailSender` has `send(message)` and `send_sync(message)`. `InMemoryEmailSender` keeps an `outbox` instead of
+  sending, for tests and development. `SMTPEmailSender(SMTPConfig(...))` sends over `smtplib`, with `security`
+  `"starttls"` (port 587, the default), `"ssl"` (465) or `"none"` (a local relay), a login when `username` is set, one
+  connection per message, and the async `send` in a worker thread.
+- A refused or unreachable server raises `EmailDeliveryError` (`code="email_delivery_failed"`, a 502 hint). Its
+  message names the server, never the password. `SMTPConfig`'s repr leaves the password out too.
+
+**The mail server as settings.** `smtp_settings(edit_permission=...)` makes six APP settings, grouped under "Email":
+host, port, security, username, the password (a [secret setting](settings.md#secret-settings-shipped), encrypted at
+rest and never read back) and the From address. An admin fills them in on the settings page instead of putting a
+password in the environment. `SettingsEmailSender(settings)` reads them on every send, so a change applies at once.
+Until the host and From address are set, it raises `EmailNotConfiguredError` (`code="email_not_configured"`, a 503
+hint).
+
+```python
+from greentechhub_core.email import SettingsEmailSender, new_email, smtp_settings
+from greentechhub_core.settings.crypto import settings_cipher
+
+registry = SettingsRegistry([*USER_PREFERENCES, *smtp_settings(edit_permission="settings.manage")])
+settings = Settings(registry, store, cipher=settings_cipher(config))   # the password needs a cipher
+mailer = SettingsEmailSender(settings)
+
+await mailer.send(new_email(user.email, "Your export is ready", "Download it from Reports."))
+```
+
+`smtp_config(settings)` (and `smtp_config_sync`) gives the current `SMTPConfig`, or `None` while email isn't set up.
+Use it to show "email isn't set up" before offering an email option.
+
 ## Audit log
 
 `audit/` records who did what, when: the source for greentechhub-ui's `gth_timeline` activity feed and, later, a
