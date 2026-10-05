@@ -59,3 +59,11 @@ def test_real_env_var_takes_precedence_over_dotenv_file(tmp_path, monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "from-real-env")
     settings = GTHBaseSettings()
     assert settings.secret_key == "from-real-env"
+
+
+def test_settings_cipher_key_is_optional_and_read_from_env(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "super-secret")
+    monkeypatch.delenv("SETTINGS_CIPHER_KEY", raising=False)
+    assert GTHBaseSettings(_env_file=None).settings_cipher_key == ""
+    monkeypatch.setenv("SETTINGS_CIPHER_KEY", "a-fernet-key")
+    assert GTHBaseSettings(_env_file=None).settings_cipher_key == "a-fernet-key"
