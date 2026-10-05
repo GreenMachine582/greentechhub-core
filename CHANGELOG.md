@@ -5,6 +5,15 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.11.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.10.0...v0.11.0) (2026-10-05)
+
+
+### Features
+
+* **email:** messages, senders and SMTP settings ([#49](https://github.com/GreenMachine582/greentechhub-core/issues/49)) ([c6f9e9b](https://github.com/GreenMachine582/greentechhub-core/commit/c6f9e9b0761226b83acb5bf90030f14398af3b4c))
+* **query:** filter validation by field type ([#52](https://github.com/GreenMachine582/greentechhub-core/issues/52)) ([3d8f6f6](https://github.com/GreenMachine582/greentechhub-core/commit/3d8f6f6d0292f43d99d3168c2ac91a85ed57de03))
+* **settings:** a settings cipher from config ([#51](https://github.com/GreenMachine582/greentechhub-core/issues/51)) ([01c05ae](https://github.com/GreenMachine582/greentechhub-core/commit/01c05aee392be9b416bc77207e4c163c4566b4e2))
+
 ## [0.10.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.9.0...v0.10.0) (2026-10-04)
 
 
