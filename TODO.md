@@ -11,22 +11,6 @@
 Cross-repo order (with greentechhub-fastapi and greentechhub-ui): Accounts (M1) → Notifications & email (M2) →
 consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.0.
 
-### Next release
-This lands before the next release, which also carries the email module and the settings cipher, so
-greentechhub-fastapi's query-builder validation builds on core instead of hand-rolling it.
-
-- [ ] Filter validation by field type, in `query`:
-  - A `FilterField` spec: a key, a type from greentechhub-ui's planned `gth_query_builder` (text, number, date,
-    choice, bool), and optional choices and operators.
-  - `OPERATORS_BY_TYPE`: the default operators per type, from `Operator`.
-  - `validate_filters`, which checks a `Filter`/`FilterGroup` tree against the allowed fields: unknown fields,
-    operators a type doesn't allow, values that don't fit the type (a number, an ISO date, one of the choices, a bool
-    for `is_null`), and nesting too deep or too many rows.
-  - It raises `BadRequestError` with per-row details.
-
-  greentechhub-fastapi's query-builder validation then wraps it around `parse_filter_json`, and Django can reuse
-  it. Docs: [docs/query.md](docs/query.md)
-
 ### Identity
 - [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
   JWKS. Worth doing once a service runs behind Authentik with JWT forwarding on
