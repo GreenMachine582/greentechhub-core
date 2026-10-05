@@ -26,7 +26,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `events` | `publish()`/`subscribe()` + typed event definitions — logs events today, Redis pub/sub later                               | [docs/events.md](docs/events.md) |
 | `feature_flags` | A `FeatureFlagProvider` interface; env/static-file-backed implementation to start                                          | [docs/modules.md](docs/modules.md#feature-flags) |
 | `health` | Check primitives + a `HealthResult` type — `check_disk`/`check_database`/`check_external` ship today; `check_redis` lands when Redis is deployed for some other reason | [docs/health.md](docs/health.md) |
-| `query` | Framework-independent `Filter`, `FilterGroup`, `Operator`, `Sort`, `Page`, `PageRequest` types and the response envelope shape            | [docs/query.md](docs/query.md) |
+| `query` | Framework-independent `Filter`, `FilterGroup`, `Operator`, `Sort`, `Page`, `PageRequest` types, the response envelope shape, and `validate_filters` (a client's filters checked against allowed fields by type) | [docs/query.md](docs/query.md) |
 | `observability` | `resource.py`'s `get_resource_attributes` (`service.name`/`service.version`, no OTel import) ships today; the full OTel `TracerProvider`/`MeterProvider`/exporter setup stays deferred until a collector exists | [docs/modules.md](docs/modules.md#observability) |
 | `security` | Password hashing, constant-time comparisons, secret redaction for logs, CSRF token generation, login throttling, single-use link tokens | [docs/modules.md](docs/modules.md#security) |
 | `proxy` | Pure functions parsing/validating `X-Forwarded-*` headers against a trusted-IP allowlist                                   | [docs/modules.md](docs/modules.md#proxy) |

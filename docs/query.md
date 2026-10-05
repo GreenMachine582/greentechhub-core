@@ -32,6 +32,50 @@ class Page(Generic[T]):
 
 `greentechhub-core` defines these types and the response envelope shape only. It does not parse a FastAPI `Query(...)` or Django's `request.GET` — that translation, and the actual paging mechanism (`fastapi-pagination` vs. Django's `Paginator`), is adapter-layer. Both adapters produce the same `Page` envelope, so consumers render results identically regardless of which backend served the data.
 
+## Validating filters
+
+A filter tree from a client (greentechhub-ui's query builder, parsed by an adapter) names fields, operators and values
+of its own choosing. `validate_filters` checks it against the fields a page allows and returns a normalised copy, so
+the database only sees sound input:
+
+```python
+from greentechhub_core.query import FilterField, validate_filters
+
+FIELDS = [
+    FilterField(key="name", type="text"),
+    FilterField(key="units", type="number"),
+    FilterField(key="traded", type="date"),
+    FilterField(key="kind", type="choice", choices={"buy": "Buy", "sell": "Sell"}),
+    FilterField(key="archived", type="bool"),
+]
+
+filters = validate_filters(request.filters, FIELDS)   # BadRequestError("invalid_filters") on any problem
+if (condition := where(filters, ALLOWED)) is not None:   # or page(...) with a PageRequest of them
+    stmt = stmt.where(condition)
+```
+
+Each field's type decides the operators it takes (`OPERATORS_BY_TYPE`; pass `operators=` to narrow them) and the
+values that fit:
+
+| Type | Operators | Values become |
+|---|---|---|
+| `text` | eq, ne, contains, starts_with, ends_with, in, not_in, is_null | `str` |
+| `number` | eq, ne, gt, gte, lt, lte, in, not_in, is_null | `int`, or `float` when not whole; numeric text is converted, `True` isn't a number |
+| `date` | eq, ne, gt, gte, lt, lte, is_null | `datetime.date`, from ISO text (`2026-01-31`) or a date |
+| `choice` | eq, ne, in, not_in, is_null | one of the field's `choices` (value → label, pairs or bare values) |
+| `bool` | eq, ne, is_null | `bool`, from `true`/`false` too |
+
+- `in` / `not_in` take a non-empty list of at most `max_values` (100), each checked by the type. `is_null` takes a
+  bool. Any other operator takes one value.
+- Groups nest at most `max_depth` (3) deep, and the tree holds at most `max_filters` (20) filters.
+- A field not listed is refused, unlike `where`, which skips it silently.
+- Every problem is collected into one `BadRequestError` with `code="invalid_filters"`. Its `details` list
+  `{"path", "field", "message"}` per problem; `path` is the clause's index, dotted through groups (`"1.0"`), so a
+  query builder can mark the row.
+
+Adapters wrap it: greentechhub-fastapi's query-builder validation runs it after `parse_filter_json`, and Django can call
+it on its own parsed filters.
+
 ## SQLAlchemy
 
 With the `[sqlalchemy]` extra, `greentechhub_core.sqlalchemy` applies these types to a service's own select. Parsing the
