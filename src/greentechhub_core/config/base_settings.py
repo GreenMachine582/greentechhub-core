@@ -21,6 +21,29 @@ class GTHBaseSettings(BaseSettings):
     encrypts secret settings at rest. It's optional: left empty,
     settings.crypto.settings_cipher derives one from ``secret_key`` (with a
     warning), so a development setup needs only one secret.
+
+    The adapter settings below are read by greentechhub-fastapi's
+    ``register_*`` functions. They live here so a service gets them by
+    extending this class: one it forgot to declare would otherwise be
+    dropped without a word (a Settings with ``extra="ignore"``). Every default
+    is the safe one, and the list-like ones are comma-separated strings:
+
+    - ``auth_adapter`` (``AUTH_ADAPTER``): "local" (the default; the service
+      signs its own session cookie) or "forward_auth" (a reverse proxy such
+      as Authentik's outpost signs people in). ``register_auth``.
+    - ``cors_allowed_origins`` (``CORS_ALLOWED_ORIGINS``): origins allowed
+      cross-origin requests; empty allows none. ``register_core``.
+    - ``trusted_proxies`` (``TRUSTED_PROXIES``): addresses of the reverse
+      proxies in front of the service, whose ``X-Forwarded-*`` headers are
+      believed; empty trusts none. Behind a proxy, leaving it empty makes
+      every request look like it came from the proxy, so per-client
+      counts such as the login throttle's become one count for everybody.
+      ``register_core``.
+    - ``role_groups`` (``ROLE_GROUPS``): directory group → role names, e.g.
+      ``"finance=admin|editor,staff=viewer"`` (or a JSON object).
+      ``register_permissions``.
+    - ``role_bootstrap`` (``ROLE_BOOTSTRAP``): subject → role names in the
+      same form, for the first admin and for recovery. ``register_permissions``.
     """
 
     model_config = SettingsConfigDict(
@@ -32,3 +55,9 @@ class GTHBaseSettings(BaseSettings):
     secret_key: str
     log_level: str = "INFO"
     settings_cipher_key: str = ""
+
+    auth_adapter: str = "local"
+    cors_allowed_origins: str = ""
+    trusted_proxies: str = ""
+    role_groups: str = ""
+    role_bootstrap: str = ""
