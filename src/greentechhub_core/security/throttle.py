@@ -19,6 +19,7 @@ Framework-free: showing a generic error and a Retry-After header is the
 adapter's job (greentechhub-fastapi's login views).
 """
 
+import math
 import threading
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
@@ -176,6 +177,25 @@ class ThrottleStatus:
     retry_after: timedelta | None = None
     failures: int = 0
 
+    @property
+    def retry_after_seconds(self) -> int | None:
+        """`retry_after` as a Retry-After header value: whole seconds, at
+        least 1 (rounded up, so a client never retries early), or None if
+        allowed."""
+        return None if self.retry_after is None else _whole_seconds(self.retry_after)
+
+
+def _whole_seconds(value: timedelta) -> int:
+    return max(1, math.ceil(value.total_seconds()))
+
+
+def lockout_message(what: str, retry_after: timedelta) -> str:
+    """The message for a locked-out attempt, the same whether or not the
+    account exists, e.g. lockout_message("failed sign-ins", 15 min) is
+    "Too many failed sign-ins. Try again in 15 minutes." Minutes round up."""
+    minutes = math.ceil(_whole_seconds(retry_after) / 60)
+    return f"Too many {what}. Try again in {minutes} minute{'' if minutes == 1 else 's'}."
+
 
 def account_key(username: str) -> str:
     """The throttle key for an account: case and surrounding spaces don't
@@ -187,6 +207,15 @@ def client_key(address: str) -> str:
     """The throttle key for a client, e.g. its IP address (after trusted-proxy
     resolution, so a spoofed X-Forwarded-For can't pick a fresh key)."""
     return "client:" + address.strip()
+
+
+def throttle_keys(identifier: str, address: str | None) -> list[str]:
+    """The keys one attempt counts against: the account (`account_key`),
+    plus the client (`client_key`) when its address is known."""
+    keys = [account_key(identifier)]
+    if address:
+        keys.append(client_key(address))
+    return keys
 
 
 def _status(records: Iterable[Attempts | None], now: datetime) -> ThrottleStatus:

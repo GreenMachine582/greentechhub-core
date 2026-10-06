@@ -37,19 +37,27 @@ can't be guessed forever:
 - Every method has a `_sync` twin. `prune()` deletes records no window or lockout still needs; run it now and then.
 
 ```python
-from greentechhub_core.security import LoginThrottle, account_key, client_key, verify_password
+from greentechhub_core.security import (
+    LoginThrottle, account_key, lockout_message, throttle_keys, verify_password,
+)
 
 throttle = LoginThrottle(attempt_store)
-keys = (account_key(username), client_key(client_ip))
+keys = throttle_keys(username, client_ip)  # account, plus client when the IP is known
 if not (status := await throttle.check(*keys)).allowed:
-    ...  # refuse without checking the password; Retry-After: status.retry_after
+    # refuse without checking the password
+    ...  # 429, Retry-After: status.retry_after_seconds, lockout_message("failed sign-ins", status.retry_after)
 if user is None or not verify_password(password, user.password_hash):
     status = await throttle.record_failure(*keys)  # one generic "wrong user ID or password" error
 else:
     await throttle.record_success(account_key(username))
 ```
 
-Showing the error and the `Retry-After` header is the adapter's job (greentechhub-fastapi's login views).
+- `ThrottleStatus.retry_after_seconds` is `retry_after` as a `Retry-After` value: whole seconds, rounded up, at
+  least 1 (`None` while allowed).
+- `lockout_message(what, retry_after)` is the shared wording, "Too many failed sign-ins. Try again in 15 minutes.",
+  the same whether or not the account exists.
+
+Sending the response is the adapter's job (greentechhub-fastapi's login views).
 
 ### Single-use tokens
 
