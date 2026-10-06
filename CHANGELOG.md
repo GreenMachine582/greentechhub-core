@@ -5,6 +5,14 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.12.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.11.0...v0.12.0) (2026-10-06)
+
+
+### Features
+
+* **config:** the adapter settings on GTHBaseSettings ([#55](https://github.com/GreenMachine582/greentechhub-core/issues/55)) ([bf5459f](https://github.com/GreenMachine582/greentechhub-core/commit/bf5459f1d644cbc15889b7259199f56ac9bdcb86))
+* **security:** throttle keys and Retry-After helpers ([#56](https://github.com/GreenMachine582/greentechhub-core/issues/56)) ([3ef616c](https://github.com/GreenMachine582/greentechhub-core/commit/3ef616c9d887d6681b5078e697a244840af3eb27))
+
 ## [0.11.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.10.0...v0.11.0) (2026-10-05)
 
 
