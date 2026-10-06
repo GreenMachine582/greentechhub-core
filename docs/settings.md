@@ -37,6 +37,24 @@ They also need a way to decide *who counts as an admin*. `permissions/` has the 
   - Core ships no permission values or roles either. The service supplies its own, as
     [permissions.md](permissions.md) already requires.
 
+## Env settings on `GTHBaseSettings` (shipped)
+
+Every service's `Settings` extends `GTHBaseSettings`. Env vars match its lowercase fields case-insensitively
+(`SECRET_KEY` → `secret_key`). Besides `secret_key`, `log_level` and `settings_cipher_key`, it declares the settings
+greentechhub-fastapi's `register_*` functions read. A service gets them just by extending the class, so it can't
+forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a word. The defaults are the safe ones:
+
+| Field (env var) | Default | Read by | What it does |
+|---|---|---|---|
+| `auth_adapter` (`AUTH_ADAPTER`) | `"local"` | `register_auth` | `local`: the service signs its own session cookie; `forward_auth`: a reverse proxy (Authentik's outpost) signs people in |
+| `cors_allowed_origins` (`CORS_ALLOWED_ORIGINS`) | `""` | `register_core` | Comma-separated origins allowed cross-origin requests; empty allows none |
+| `trusted_proxies` (`TRUSTED_PROXIES`) | `""` | `register_core` | Comma-separated addresses of the reverse proxies whose `X-Forwarded-*` headers are believed; empty trusts none. Behind a proxy, set it, or every request looks like it came from the proxy and per-client counts (the login throttle's) become one count for everybody |
+| `role_groups` (`ROLE_GROUPS`) | `""` | `register_permissions` | Directory group → role names, `"finance=admin\|editor,staff=viewer"` or a JSON object (see below) |
+| `role_bootstrap` (`ROLE_BOOTSTRAP`) | `""` | `register_permissions` | Subject → role names in the same form, for the first admin and recovery |
+
+A service that already declares one of these in SCREAMING_CASE (`TRUSTED_PROXIES: str = ""`) keeps working: both
+fields read the same env var.
+
 ## Role resolution (shipped)
 
 | Piece | Shape |
