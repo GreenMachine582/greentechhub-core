@@ -5,6 +5,18 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.13.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.12.0...v0.13.0) (2026-10-07)
+
+
+### Features
+
+* **background:** held lock context manager ([#65](https://github.com/GreenMachine582/greentechhub-core/issues/65)) ([43533b4](https://github.com/GreenMachine582/greentechhub-core/commit/43533b48cdb2d1c81190e6359ccfdbd0bc61101a))
+* **config:** adapter settings readers ([#61](https://github.com/GreenMachine582/greentechhub-core/issues/61)) ([c9a1005](https://github.com/GreenMachine582/greentechhub-core/commit/c9a100597677821e8889cacca57065985626ae02))
+* **config:** service basics on GTHBaseSettings ([#63](https://github.com/GreenMachine582/greentechhub-core/issues/63)) ([e689eab](https://github.com/GreenMachine582/greentechhub-core/commit/e689eabea34b7041e05f1ca800994f211824fbab))
+* **email:** reading mail over IMAP ([#66](https://github.com/GreenMachine582/greentechhub-core/issues/66)) ([7e15d61](https://github.com/GreenMachine582/greentechhub-core/commit/7e15d6143ce3159d893f4c5428955c205f4525f4))
+* **security:** shared form checks ([#62](https://github.com/GreenMachine582/greentechhub-core/issues/62)) ([96ee9e1](https://github.com/GreenMachine582/greentechhub-core/commit/96ee9e1dc83cbae9ac2928c9539a6c93bb0f619b))
+* **sqlalchemy:** Database session plumbing ([#64](https://github.com/GreenMachine582/greentechhub-core/issues/64)) ([13ba1dc](https://github.com/GreenMachine582/greentechhub-core/commit/13ba1dc1a8fddbc928a23efae5f8622a1302c9cb))
+
 ## [0.12.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.11.0...v0.12.0) (2026-10-06)
 
 
