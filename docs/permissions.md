@@ -44,6 +44,11 @@ granted = resolver.granted_sync(identity)     # or: await resolver.granted(ident
 has_permission(identity, SETTINGS_MANAGE, granted=granted)
 ```
 
+**Role maps from settings.** `parse_role_map(value, name)` turns `ROLE_GROUPS`/`ROLE_BOOTSTRAP` into the dicts
+above. It accepts the compact env form `"alice=admin|editor,bob=viewer"`, a JSON object string, or a mapping.
+Empty means no entries, and anything malformed raises `ValueError` naming the setting. `read_role_map(settings,
+name)` reads the setting first (`config.setting_value`).
+
 - **Fails fast.** A duplicate role name, or a `group_roles`/`bootstrap` entry naming an unknown role, raises `ValueError` at construction.
 - **Ignores stale grants.** A stored role name that isn't in `roles` grants nothing and is skipped. This covers a role deleted from code while its rows remain.
 - **Handles anonymous users.** `None` resolves to an empty set, so an adapter can call the resolver unconditionally.

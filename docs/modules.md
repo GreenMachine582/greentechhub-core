@@ -18,6 +18,12 @@ The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until th
 
 `passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins and `one_time.py` issues single-use link tokens (both below). Framework-independent primitives only.
 
+**New-password checks.** `password_problem(new, confirm, *, min_length=8, current=None)` returns the first problem
+as `(field, message)`, with `field` either `"new"` or `"confirm"`, or `None` when the password is fine. It checks
+three things in order: too short (`PASSWORD_TOO_SHORT`), the same as `current` (`PASSWORD_UNCHANGED`, when
+changing a password), and not matching the confirmation (`PASSWORDS_DIFFER`). Forms name their fields differently,
+so each maps `field` onto its own, and sign-up, reset and change-password all say the same thing.
+
 ### Login throttling
 
 `LoginThrottle` counts failed attempts per key and locks a key out once it has failed too often, so a password
@@ -160,6 +166,9 @@ panel.
   a value from a form can't add headers. `new_email(to, subject, text, ...)` takes one address or several.
   `message.to_mime(default_sender)` gives the standard-library message: plain text, or multipart/alternative with
   `html`.
+- `email_looks_valid(address)` is the form check (one `@` with text on both sides, no whitespace), with its message
+  `EMAIL_INVALID` ("Enter an email address, like name@example.com."). It's for sign-up and profile forms, not a
+  delivery guarantee.
 - An `EmailSender` has `send(message)` and `send_sync(message)`. `InMemoryEmailSender` keeps an `outbox` instead of
   sending, for tests and development. `SMTPEmailSender(SMTPConfig(...))` sends over `smtplib`, with `security`
   `"starttls"` (port 587, the default), `"ssl"` (465) or `"none"` (a local relay), a login when `username` is set, one

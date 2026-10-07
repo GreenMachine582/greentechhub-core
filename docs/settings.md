@@ -51,9 +51,34 @@ forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a
 | `trusted_proxies` (`TRUSTED_PROXIES`) | `""` | `register_core` | Comma-separated addresses of the reverse proxies whose `X-Forwarded-*` headers are believed; empty trusts none. Behind a proxy, set it, or every request looks like it came from the proxy and per-client counts (the login throttle's) become one count for everybody |
 | `role_groups` (`ROLE_GROUPS`) | `""` | `register_permissions` | Directory group → role names, `"finance=admin\|editor,staff=viewer"` or a JSON object (see below) |
 | `role_bootstrap` (`ROLE_BOOTSTRAP`) | `""` | `register_permissions` | Subject → role names in the same form, for the first admin and recovery |
+| `environment` (`ENVIRONMENT`) | `"development"` | the service; the CORS opt-in below | `"development"` or `"production"` |
+| `lock_dir` (`LOCK_DIR`) | `""` | `lock_directory()` | Where `FileLock`s live: this, else `<tempdir>/gth-locks`. Every worker and replica on a host must share it |
+
+**Two opt-ins for development.** Both are class attributes on the service's `Settings`, off by default, so services
+that don't set them see no change:
+
+```python
+class Settings(GTHBaseSettings):
+    ephemeral_secret_key = True            # SECRET_KEY unset → a random key per process, with a warning
+    cors_allow_all_in_development = True   # development + empty CORS_ALLOWED_ORIGINS → "*"
+```
+
+- `ephemeral_secret_key`: without it `SECRET_KEY` is required. With it, an unset key becomes a random one and a
+  warning says that every token and session cookie stops working on restart.
+- `cors_allow_all_in_development`: in development an empty `CORS_ALLOWED_ORIGINS` becomes `"*"`, for local and
+  Swagger testing. In production an empty one warns that no cross-origin request will be allowed.
 
 A service that already declares one of these in SCREAMING_CASE (`TRUSTED_PROXIES: str = ""`) keeps working: both
 fields read the same env var.
+
+**Reading them.** An adapter reads these with `greentechhub_core.config`'s readers, so every adapter agrees:
+- `setting_value(settings, "TRUSTED_PROXIES")` takes the service's SCREAMING_CASE attribute when it's non-empty,
+  else the lowercase field, else `None`. A value a service sets at runtime (e.g. `CORS_ALLOWED_ORIGINS = "*"` in
+  development) isn't hidden by a non-empty default such as `auth_adapter="local"`.
+- `read_list_setting` (comma-separated, or an already-parsed list) and `read_str_setting(settings, name,
+  default)` build on it. Any object works, not only a `GTHBaseSettings`.
+- `permissions.read_role_map(settings, "ROLE_BOOTSTRAP")` parses a role map (see
+  [permissions.md](permissions.md)).
 
 ## Role resolution (shipped)
 
