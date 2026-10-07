@@ -197,6 +197,28 @@ await mailer.send(new_email(user.email, "Your export is ready", "Download it fro
 `smtp_config(settings)` (and `smtp_config_sync`) gives the current `SMTPConfig`, or `None` while email isn't set up.
 Use it to show "email isn't set up" before offering an email option.
 
+**Reading mail over IMAP.** `email/imap.py` reads a mailbox with the standard library only, e.g. to import
+confirmations a broker or shop sends:
+
+```python
+registry = SettingsRegistry([*USER_PREFERENCES, *imap_settings()])   # each user's own mailbox
+config = await imap_config(settings, user)                             # None until address + password set
+reader = ImapReader(config)
+for uid, message in await asyncio.to_thread(reader.fetch, '(UNSEEN FROM "orders@shop.example")'):
+    handle(message_text(message), received_at(message))
+await asyncio.to_thread(reader.mark_seen, handled_uids)               # only after it worked
+```
+
+- `IMAPConfig(host, username, password, port=993, mailbox="INBOX")` keeps the password out of its repr.
+  `ImapReader(config, connect=imaplib.IMAP4_SSL)` opens one connection per call and always logs out.
+- `fetch(criteria)` returns `(uid, message)` pairs and doesn't mark anything seen, so a run that fails part-way can
+  be run again. `mark_seen(uids)` flags them afterwards.
+- `message_text(message)` is the first text/plain part, else the HTML part as plain text (`html_text`, without
+  script or style). `received_at(message)` reads the Date header.
+- `imap_settings(scope=USER, group="Email", prefix="email.")` is the mailbox as five settings: `address` (the
+  login), `app_password` (a secret, so the registry needs a cipher), `imap_host`, `imap_port` and `mailbox`.
+  `imap_config(settings, who)` reads them back.
+
 ## Audit log
 
 `audit/` records who did what, when: the source for greentechhub-ui's `gth_timeline` activity feed and, later, a

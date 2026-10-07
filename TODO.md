@@ -24,15 +24,6 @@ A review of PyFinBot and the adapters found framework-free code living in greent
 PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
 `todo.md` hold the follow-ups that adopt them.
 
-- [ ] C6. `feat(email)`: reading mail over IMAP
-  - **Why:** sending is here (`smtp_settings`, `EmailSender`), but PyFinBot's Commsec import hand-rolls reading
-    (`core/email_sync.py`, about 100 lines): the account config with a hidden password, fetch by criteria,
-    mark-seen, a text body with an HTML fallback, received-at. `core/email_accounts.py` mirrors `smtp_settings()`.
-  - **Scope:**
-    - `imap_settings(scope=USER)` / `imap_config(settings, who)`, like the SMTP pair;
-    - an `ImapReader` with `fetch(criteria)` and `mark_seen`;
-    - an `[imap]` extra if the HTML fallback needs bs4.
-  - **Done when:** PyFinBot keeps only its Commsec sender criteria and parser.
 - [ ] C7. `greentechhub-testing` pytest plugin (promoted from Ideas)
   - **Why:** PyFinBot's `tests/conftest.py` has about 110 lines every service needs: SQLite savepoint
     engine/connection/session, a client with dependency and session-factory overrides, re-registering auth after
