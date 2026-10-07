@@ -18,6 +18,12 @@ The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until th
 
 `passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins and `one_time.py` issues single-use link tokens (both below). Framework-independent primitives only.
 
+**New-password checks.** `password_problem(new, confirm, *, min_length=8, current=None)` returns the first problem
+as `(field, message)`, with `field` either `"new"` or `"confirm"`, or `None` when the password is fine. It checks
+three things in order: too short (`PASSWORD_TOO_SHORT`), the same as `current` (`PASSWORD_UNCHANGED`, when
+changing a password), and not matching the confirmation (`PASSWORDS_DIFFER`). Forms name their fields differently,
+so each maps `field` onto its own, and sign-up, reset and change-password all say the same thing.
+
 ### Login throttling
 
 `LoginThrottle` counts failed attempts per key and locks a key out once it has failed too often, so a password
@@ -160,6 +166,9 @@ panel.
   a value from a form can't add headers. `new_email(to, subject, text, ...)` takes one address or several.
   `message.to_mime(default_sender)` gives the standard-library message: plain text, or multipart/alternative with
   `html`.
+- `email_looks_valid(address)` is the form check (one `@` with text on both sides, no whitespace), with its message
+  `EMAIL_INVALID` ("Enter an email address, like name@example.com."). It's for sign-up and profile forms, not a
+  delivery guarantee.
 - An `EmailSender` has `send(message)` and `send_sync(message)`. `InMemoryEmailSender` keeps an `outbox` instead of
   sending, for tests and development. `SMTPEmailSender(SMTPConfig(...))` sends over `smtplib`, with `security`
   `"starttls"` (port 587, the default), `"ssl"` (465) or `"none"` (a local relay), a login when `username` is set, one
@@ -187,6 +196,28 @@ await mailer.send(new_email(user.email, "Your export is ready", "Download it fro
 
 `smtp_config(settings)` (and `smtp_config_sync`) gives the current `SMTPConfig`, or `None` while email isn't set up.
 Use it to show "email isn't set up" before offering an email option.
+
+**Reading mail over IMAP.** `email/imap.py` reads a mailbox with the standard library only, e.g. to import
+confirmations a broker or shop sends:
+
+```python
+registry = SettingsRegistry([*USER_PREFERENCES, *imap_settings()])   # each user's own mailbox
+config = await imap_config(settings, user)                             # None until address + password set
+reader = ImapReader(config)
+for uid, message in await asyncio.to_thread(reader.fetch, '(UNSEEN FROM "orders@shop.example")'):
+    handle(message_text(message), received_at(message))
+await asyncio.to_thread(reader.mark_seen, handled_uids)               # only after it worked
+```
+
+- `IMAPConfig(host, username, password, port=993, mailbox="INBOX")` keeps the password out of its repr.
+  `ImapReader(config, connect=imaplib.IMAP4_SSL)` opens one connection per call and always logs out.
+- `fetch(criteria)` returns `(uid, message)` pairs and doesn't mark anything seen, so a run that fails part-way can
+  be run again. `mark_seen(uids)` flags them afterwards.
+- `message_text(message)` is the first text/plain part, else the HTML part as plain text (`html_text`, without
+  script or style). `received_at(message)` reads the Date header.
+- `imap_settings(scope=USER, group="Email", prefix="email.")` is the mailbox as five settings: `address` (the
+  login), `app_password` (a secret, so the registry needs a cipher), `imap_host`, `imap_port` and `mailbox`.
+  `imap_config(settings, who)` reads them back.
 
 ## Audit log
 
@@ -260,6 +291,17 @@ fiscal_year_label(2024, start_month=1)         # "2024": the calendar year
 ## Background tasks
 
 `background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
+
+`held(lock, name, ttl)` is the usual way to use one. It takes the lock without waiting for a `with` block, yields
+whether it got it, and releases it on exit (even on an exception) only if it did:
+
+```python
+locks = FileLock(directory=settings.lock_directory())
+with held(locks, "market-sync-ASX", ttl=15 * 60) as acquired:
+    if not acquired:
+        ...  # another worker or replica is already running it
+    run_the_sync()
+```
 
 `background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
 
