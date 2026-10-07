@@ -55,6 +55,15 @@ forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a
 A service that already declares one of these in SCREAMING_CASE (`TRUSTED_PROXIES: str = ""`) keeps working: both
 fields read the same env var.
 
+**Reading them.** An adapter reads these with `greentechhub_core.config`'s readers, so every adapter agrees:
+- `setting_value(settings, "TRUSTED_PROXIES")` takes the service's SCREAMING_CASE attribute when it's non-empty,
+  else the lowercase field, else `None`. A value a service sets at runtime (e.g. `CORS_ALLOWED_ORIGINS = "*"` in
+  development) isn't hidden by a non-empty default such as `auth_adapter="local"`.
+- `read_list_setting` (comma-separated, or an already-parsed list) and `read_str_setting(settings, name,
+  default)` build on it. Any object works, not only a `GTHBaseSettings`.
+- `permissions.read_role_map(settings, "ROLE_BOOTSTRAP")` parses a role map (see
+  [permissions.md](permissions.md)).
+
 ## Role resolution (shipped)
 
 | Piece | Shape |
