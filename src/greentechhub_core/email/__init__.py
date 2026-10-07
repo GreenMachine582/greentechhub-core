@@ -1,8 +1,17 @@
 """greentechhub_core.email — composing and sending email: EmailMessage, the
 EmailSender protocol with in-memory and SMTP senders, and the mail server
-as APP settings (smtp_settings, SettingsEmailSender); see
-docs/modules.md#email."""
+as APP settings (smtp_settings, SettingsEmailSender), and reading mail over IMAP
+(ImapReader, imap_settings); see docs/modules.md#email."""
 
+from greentechhub_core.email.imap import (
+    IMAPConfig,
+    ImapReader,
+    html_text,
+    imap_config,
+    imap_settings,
+    message_text,
+    received_at,
+)
 from greentechhub_core.email.message import EmailMessage, new_email
 from greentechhub_core.email.sender import (
     SMTP_SECURITY,
@@ -40,11 +49,18 @@ __all__ = [
     "EmailMessage",
     "EmailNotConfiguredError",
     "EmailSender",
+    "IMAPConfig",
+    "ImapReader",
     "InMemoryEmailSender",
     "SMTPConfig",
     "SMTPEmailSender",
     "SettingsEmailSender",
+    "html_text",
+    "imap_config",
+    "imap_settings",
+    "message_text",
     "new_email",
+    "received_at",
     "smtp_config",
     "smtp_config_sync",
     "smtp_settings",
