@@ -26,9 +26,11 @@ from greentechhub_core.email.settings import (
     smtp_config_sync,
     smtp_settings,
 )
+from greentechhub_core.email.validation import EMAIL_INVALID, email_looks_valid
 
 __all__ = [
     "EMAIL_FROM_KEY",
+    "EMAIL_INVALID",
     "SMTP_HOST_KEY",
     "SMTP_PASSWORD_KEY",
     "SMTP_PORT_KEY",
@@ -44,6 +46,7 @@ __all__ = [
     "SMTPConfig",
     "SMTPEmailSender",
     "SettingsEmailSender",
+    "email_looks_valid",
     "new_email",
     "smtp_config",
     "smtp_config_sync",

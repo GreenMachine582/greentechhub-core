@@ -2,6 +2,13 @@
 service's own Settings extends.
 """
 
+import secrets
+import tempfile
+import warnings
+from pathlib import Path
+from typing import Any, ClassVar
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -61,3 +68,51 @@ class GTHBaseSettings(BaseSettings):
     trusted_proxies: str = ""
     role_groups: str = ""
     role_bootstrap: str = ""
+
+    # Service basics (docs/settings.md). `environment` is "development" or
+    # "production"; `lock_dir` is where FileLocks live (lock_directory()).
+    environment: str = "development"
+    lock_dir: str = ""
+
+    #: Opt-in: with SECRET_KEY unset, fill a random key for this process and
+    #: warn, instead of refusing to start. Every token and session cookie
+    #: signed with it stops working on restart, so it suits development only.
+    ephemeral_secret_key: ClassVar[bool] = False
+
+    #: Opt-in: in development, an empty CORS_ALLOWED_ORIGINS becomes "*"
+    #: (frictionless local and Swagger testing), and in production an empty
+    #: one warns that no cross-origin request will be allowed.
+    cors_allow_all_in_development: ClassVar[bool] = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def _ephemeral_secret_key(cls, data: Any) -> Any:
+        if not cls.ephemeral_secret_key or not isinstance(data, dict):
+            return data
+        if not data.get("secret_key"):
+            data = {**data, "secret_key": secrets.token_hex(32)}
+            warnings.warn(
+                "SECRET_KEY is not set: using a random key for this process. Tokens and sessions "
+                "signed with it stop working on restart; set SECRET_KEY for any deployment.",
+                stacklevel=2,
+            )
+        return data
+
+    @model_validator(mode="after")
+    def _cors_defaults(self) -> "GTHBaseSettings":
+        if not type(self).cors_allow_all_in_development or self.cors_allowed_origins:
+            return self
+        if self.environment == "development":
+            self.cors_allowed_origins = "*"
+        elif self.environment == "production":
+            warnings.warn(
+                "ENVIRONMENT is 'production' but CORS_ALLOWED_ORIGINS is not set: no cross-origin "
+                "request will be allowed until it's set to a comma-separated allow-list.",
+                stacklevel=2,
+            )
+        return self
+
+    def lock_directory(self) -> str:
+        """Where FileLocks live: `lock_dir`, else `<tempdir>/gth-locks`. Every
+        worker and replica on a host must share it for a lock to span them."""
+        return self.lock_dir or str(Path(tempfile.gettempdir()) / "gth-locks")
