@@ -317,6 +317,29 @@ one-off script.
 `pip install 'greentechhub-core[sqlalchemy]'` makes `greentechhub_core.sqlalchemy` importable. Without the extra,
 importing it raises `ImportError` naming the extra; nothing else in core imports it.
 
+**The service's database: `Database`.** It gives the pieces every service writes around its engine. Nothing
+connects at import: the engine is built on first use.
+
+```python
+db = Database(settings.async_database_url, echo=False, session_class=AsyncSession)
+
+async def get_session():                       # the framework dependency
+    async for session in db.session():
+        yield session
+
+store = SQLAlchemySettingsStore(SETTINGS_TABLE, async_session_factory=db.session_factory)
+checks = [db.ready]                            # /health/ready: SELECT 1
+await db.migrate_async("alembic.ini", "src/app/alembic", project_root=".")   # alembic upgrade head
+db.override(async_sessionmaker(bind=test_connection, ...))                    # tests
+```
+
+- `session_factory()` is the zero-argument factory the stores below take: a plain SQLAlchemy `AsyncSession` on the
+  current bind, looked up per call so a test override applies. `session()` uses `session_class` (e.g. SQLModel's).
+- `ready()` runs `check_database` through the current bind, a test's connection included.
+- `migrate()` / `migrate_async()` need alembic. They make the paths absolute, so they work from any working
+  directory, and they split `prepend_sys_path` on the OS separator. env.py sees
+  `config.attributes["configure_logger"]` as False, so it can keep the app's logging.
+
 | Piece | Shape |
 |---|---|
 | `settings_table(metadata)` | `gth_settings`: `scope`, `subject` (`""` for app rows), `key` (together the primary key), `value` (JSON), `updated_at` |

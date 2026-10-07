@@ -22,6 +22,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
     ) from exc
 
 from greentechhub_core.sqlalchemy.audit import SQLAlchemyAuditStore
+from greentechhub_core.sqlalchemy.database import Database
 from greentechhub_core.sqlalchemy.grants import SQLAlchemyGrantStore
 from greentechhub_core.sqlalchemy.notifications import SQLAlchemyNotificationStore
 from greentechhub_core.sqlalchemy.one_time import SQLAlchemyTokenStore
@@ -52,6 +53,7 @@ from greentechhub_core.sqlalchemy.throttle import SQLAlchemyAttemptStore
 
 __all__ = [
     "AUDIT_LOG_TABLE",
+    "Database",
     "LOGIN_ATTEMPTS_TABLE",
     "NOTIFICATIONS_TABLE",
     "ONE_TIME_TOKENS_TABLE",
