@@ -24,16 +24,6 @@ A review of PyFinBot and the adapters found framework-free code living in greent
 PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
 `todo.md` hold the follow-ups that adopt them.
 
-- [ ] C1. `feat(config)`: the adapter settings readers
-  - **Why:** greentechhub-fastapi's `registration/_settings.py` (`setting_value`, `read_list_setting`,
-    `read_str_setting`) and `registration/permissions.py` `read_role_map` are pure parsers of fields this package
-    declares (`trusted_proxies`, `role_groups`, …). They hold the precedence rule (a service's SCREAMING_CASE
-    attribute, then the lowercase field), and a Django adapter would have to copy them.
-  - **Scope:**
-    - `config`: `setting_value(settings, name)` plus list/str readers;
-    - `permissions`: `parse_role_map(value, name)` (compact `"alice=admin|editor"` or JSON);
-    - the same behaviour and errors as fastapi's today.
-  - **Done when:** fastapi's copies become thin calls (its F6).
 - [ ] C2. `feat(security)`: shared form checks
   - **Why:** the new-password rules and "Use at least N characters." / "The passwords don't match." are written out
     three times in fastapi (sign-up, reset, Settings › Password). `email_looks_valid` and "Enter an email address,
