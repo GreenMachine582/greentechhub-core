@@ -24,14 +24,6 @@ A review of PyFinBot and the adapters found framework-free code living in greent
 PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
 `todo.md` hold the follow-ups that adopt them.
 
-- [ ] C4. `feat(sqlalchemy)`: session plumbing
-  - **Why:** PyFinBot's `db/session.py` (about 65 lines) is generic: a lazy engine and sessionmaker, a
-    `get_session` dependency body, a test override hook, the plain `session_factory` the SQLAlchemy stores here
-    take, a `database_ready` health check, and an alembic `upgrade head` with absolute paths. Today
-    `_sessions.py` is internal only.
-  - **Scope:** a `Database(url, *, echo=False)` object with `session()`, `session_factory`, `override(factory)`,
-    `ready()` and `migrate(alembic_ini, script_location)`. Framework-free; fastapi's dependency is a one-liner.
-  - **Done when:** PyFinBot's `db/session.py` is a few lines over it.
 - [ ] C5. `feat(background)`: a lock context manager
   - **Why:** PyFinBot's `market_sync.py` `sync_guard` wraps `FileLock` acquire/release in a context manager with a
     lazy singleton; the job-scheduler idea below wants the same.
