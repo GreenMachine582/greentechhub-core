@@ -17,6 +17,8 @@ version.
 import os
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Protocol, TextIO
 
@@ -148,3 +150,24 @@ else:
 
     def _unlock(handle: TextIO) -> None:
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+@contextmanager
+def held(lock: Lock, name: str, ttl: float) -> Iterator[bool]:
+    """Try to take `lock`'s `name` without waiting, for a `with` block.
+
+    Yields True when this caller got it (and releases it on exit, even on an
+    exception), or False when someone else holds it: another task, worker or
+    replica already running the same job. The caller decides how to refuse:
+
+        with held(locks, "market-sync-ASX", ttl=15 * 60) as acquired:
+            if not acquired:
+                return "already running"
+            run_the_sync()
+    """
+    acquired = lock.acquire(name, ttl)
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            lock.release(name)

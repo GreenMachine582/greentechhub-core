@@ -24,12 +24,6 @@ A review of PyFinBot and the adapters found framework-free code living in greent
 PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
 `todo.md` hold the follow-ups that adopt them.
 
-- [ ] C5. `feat(background)`: a lock context manager
-  - **Why:** PyFinBot's `market_sync.py` `sync_guard` wraps `FileLock` acquire/release in a context manager with a
-    lazy singleton; the job-scheduler idea below wants the same.
-  - **Scope:** `with held(lock, name, ttl):` over any `Lock` (`acquire(name, ttl)` / `release(name)`), raising a
-    clear "already running" error when `acquire` returns False and releasing on exit.
-  - **Done when:** PyFinBot's market, dividend and email syncs use it.
 - [ ] C6. `feat(email)`: reading mail over IMAP
   - **Why:** sending is here (`smtp_settings`, `EmailSender`), but PyFinBot's Commsec import hand-rolls reading
     (`core/email_sync.py`, about 100 lines): the account config with a hidden password, fetch by criteria,
