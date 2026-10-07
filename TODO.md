@@ -24,48 +24,6 @@ A review of PyFinBot and the adapters found framework-free code living in greent
 PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
 `todo.md` hold the follow-ups that adopt them.
 
-- [ ] C1. `feat(config)`: the adapter settings readers
-  - **Why:** greentechhub-fastapi's `registration/_settings.py` (`setting_value`, `read_list_setting`,
-    `read_str_setting`) and `registration/permissions.py` `read_role_map` are pure parsers of fields this package
-    declares (`trusted_proxies`, `role_groups`, …). They hold the precedence rule (a service's SCREAMING_CASE
-    attribute, then the lowercase field), and a Django adapter would have to copy them.
-  - **Scope:**
-    - `config`: `setting_value(settings, name)` plus list/str readers;
-    - `permissions`: `parse_role_map(value, name)` (compact `"alice=admin|editor"` or JSON);
-    - the same behaviour and errors as fastapi's today.
-  - **Done when:** fastapi's copies become thin calls (its F6).
-- [ ] C2. `feat(security)`: shared form checks
-  - **Why:** the new-password rules and "Use at least N characters." / "The passwords don't match." are written out
-    three times in fastapi (sign-up, reset, Settings › Password). `email_looks_valid` and "Enter an email address,
-    like name@example.com." live in fastapi's `email.py`, and `email/message.py`'s `_check_address` is a weaker
-    copy. PyFinBot's API password update checks nothing.
-  - **Scope:**
-    - `security.password_problems(new, confirm, *, min_length=8) -> list[str]`;
-    - `email.email_looks_valid(address)`;
-    - the messages as constants.
-  - **Done when:** fastapi's three forms and PyFinBot's API use them.
-- [ ] C3. `feat(config)`: service basics on `GTHBaseSettings`
-  - **Why:** every service repeats these; PyFinBot's `core/settings.py` has them all.
-  - **Scope:**
-    - `environment` (`"development"`/`"production"`), with the dev CORS default (`*` when `cors_allowed_origins`
-      is unset) and a production warning when it's empty;
-    - `lock_dir` for `FileLock`;
-    - an opt-in ephemeral `secret_key` (random per process, with a warning) for development.
-  - **Done when:** PyFinBot's copies and its `pyfinbot.py` CORS block are gone.
-- [ ] C4. `feat(sqlalchemy)`: session plumbing
-  - **Why:** PyFinBot's `db/session.py` (about 65 lines) is generic: a lazy engine and sessionmaker, a
-    `get_session` dependency body, a test override hook, the plain `session_factory` the SQLAlchemy stores here
-    take, a `database_ready` health check, and an alembic `upgrade head` with absolute paths. Today
-    `_sessions.py` is internal only.
-  - **Scope:** a `Database(url, *, echo=False)` object with `session()`, `session_factory`, `override(factory)`,
-    `ready()` and `migrate(alembic_ini, script_location)`. Framework-free; fastapi's dependency is a one-liner.
-  - **Done when:** PyFinBot's `db/session.py` is a few lines over it.
-- [ ] C5. `feat(background)`: a lock context manager
-  - **Why:** PyFinBot's `market_sync.py` `sync_guard` wraps `FileLock` acquire/release in a context manager with a
-    lazy singleton; the job-scheduler idea below wants the same.
-  - **Scope:** `with held(lock, name, ttl):` over any `Lock` (`acquire(name, ttl)` / `release(name)`), raising a
-    clear "already running" error when `acquire` returns False and releasing on exit.
-  - **Done when:** PyFinBot's market, dividend and email syncs use it.
 - [ ] C7. `greentechhub-testing` pytest plugin (promoted from Ideas)
   - **Why:** PyFinBot's `tests/conftest.py` has about 110 lines every service needs: SQLite savepoint
     engine/connection/session, a client with dependency and session-factory overrides, re-registering auth after
