@@ -261,6 +261,17 @@ fiscal_year_label(2024, start_month=1)         # "2024": the calendar year
 
 `background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
 
+`held(lock, name, ttl)` is the usual way to use one. It takes the lock without waiting for a `with` block, yields
+whether it got it, and releases it on exit (even on an exception) only if it did:
+
+```python
+locks = FileLock(directory=settings.lock_directory())
+with held(locks, "market-sync-ASX", ttl=15 * 60) as acquired:
+    if not acquired:
+        ...  # another worker or replica is already running it
+    run_the_sync()
+```
+
 `background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
 
 ## CLI (not v1, worth leaving room for)
