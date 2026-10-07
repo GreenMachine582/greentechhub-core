@@ -24,16 +24,6 @@ A review of PyFinBot and the adapters found framework-free code living in greent
 PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
 `todo.md` hold the follow-ups that adopt them.
 
-- [ ] C2. `feat(security)`: shared form checks
-  - **Why:** the new-password rules and "Use at least N characters." / "The passwords don't match." are written out
-    three times in fastapi (sign-up, reset, Settings › Password). `email_looks_valid` and "Enter an email address,
-    like name@example.com." live in fastapi's `email.py`, and `email/message.py`'s `_check_address` is a weaker
-    copy. PyFinBot's API password update checks nothing.
-  - **Scope:**
-    - `security.password_problems(new, confirm, *, min_length=8) -> list[str]`;
-    - `email.email_looks_valid(address)`;
-    - the messages as constants.
-  - **Done when:** fastapi's three forms and PyFinBot's API use them.
 - [ ] C3. `feat(config)`: service basics on `GTHBaseSettings`
   - **Why:** every service repeats these; PyFinBot's `core/settings.py` has them all.
   - **Scope:**
