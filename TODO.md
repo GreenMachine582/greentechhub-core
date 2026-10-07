@@ -44,14 +44,6 @@ PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. 
     - `email.email_looks_valid(address)`;
     - the messages as constants.
   - **Done when:** fastapi's three forms and PyFinBot's API use them.
-- [ ] C3. `feat(config)`: service basics on `GTHBaseSettings`
-  - **Why:** every service repeats these; PyFinBot's `core/settings.py` has them all.
-  - **Scope:**
-    - `environment` (`"development"`/`"production"`), with the dev CORS default (`*` when `cors_allowed_origins`
-      is unset) and a production warning when it's empty;
-    - `lock_dir` for `FileLock`;
-    - an opt-in ephemeral `secret_key` (random per process, with a warning) for development.
-  - **Done when:** PyFinBot's copies and its `pyfinbot.py` CORS block are gone.
 - [ ] C4. `feat(sqlalchemy)`: session plumbing
   - **Why:** PyFinBot's `db/session.py` (about 65 lines) is generic: a lazy engine and sessionmaker, a
     `get_session` dependency body, a test override hook, the plain `session_factory` the SQLAlchemy stores here
