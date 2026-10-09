@@ -6,11 +6,12 @@ requires-python = ">=3.12"
 dependencies = ["pydantic-settings>=2.6", "bcrypt>=4.0", "PyJWT>=2.8"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6", "sqlalchemy[asyncio]>=2.0", "aiosqlite>=0.20", "cryptography>=42",
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6", "sqlalchemy[asyncio]>=2.0", "aiosqlite>=0.20", "cryptography>=42",
        "alembic>=1.13"]
 contracts = ["pytest>=8"]
 sqlalchemy = ["sqlalchemy[asyncio]>=2.0"]
 crypto = ["cryptography>=42"]
+testing = ["pytest>=8", "pytest-asyncio>=0.23", "sqlalchemy[asyncio]>=2.0", "aiosqlite>=0.20"]
 
 [build-system]
 requires = ["hatchling"]

@@ -65,14 +65,18 @@ class ImapReader:
     def fetch(self, criteria: str) -> list[tuple[bytes, Message]]:
         """The messages matching IMAP search `criteria` (e.g.
         '(UNSEEN FROM "a@b.example")') as (uid, message) pairs. Doesn't mark
-        them seen. Synchronous: run it in a worker thread from async code."""
+        them seen. A message deleted since the search is left out.
+        Synchronous: run it in a worker thread from async code."""
         imap = self._open()
         try:
             _, data = imap.search(None, criteria)
             messages = []
             for uid in data[0].split():
                 _, message_data = imap.fetch(uid, "(RFC822)")
-                messages.append((uid, email.message_from_bytes(message_data[0][1])))
+                # (envelope, raw message); anything else (e.g. [None] for a
+                # message deleted since the search) has nothing to parse.
+                if message_data and isinstance(message_data[0], tuple):
+                    messages.append((uid, email.message_from_bytes(message_data[0][1])))
             return messages
         finally:
             imap.logout()

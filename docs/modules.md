@@ -212,7 +212,8 @@ await asyncio.to_thread(reader.mark_seen, handled_uids)               # only aft
 - `IMAPConfig(host, username, password, port=993, mailbox="INBOX")` keeps the password out of its repr.
   `ImapReader(config, connect=imaplib.IMAP4_SSL)` opens one connection per call and always logs out.
 - `fetch(criteria)` returns `(uid, message)` pairs and doesn't mark anything seen, so a run that fails part-way can
-  be run again. `mark_seen(uids)` flags them afterwards.
+  be run again. A message deleted between the search and its fetch is left out. `mark_seen(uids)` flags them
+  afterwards.
 - `message_text(message)` is the first text/plain part, else the HTML part as plain text (`html_text`, without
   script or style). `received_at(message)` reads the Date header.
 - `imap_settings(scope=USER, group="Email", prefix="email.")` is the mailbox as five settings: `address` (the
@@ -304,6 +305,12 @@ with held(locks, "market-sync-ASX", ttl=15 * 60) as acquired:
 ```
 
 `background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
+
+## Testing
+
+`testing/sqlalchemy.py` is an opt-in pytest plugin (the `[testing]` extra). It gives each test a SQLite
+transaction that's rolled back afterwards, and `gth_database(db)` points a `Database` at it. See
+[testing.md](testing.md#fixtures-for-a-services-own-tests).
 
 ## CLI (not v1, worth leaving room for)
 
