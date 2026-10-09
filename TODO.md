@@ -19,21 +19,6 @@ consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.
 - [ ] The full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to
   ([docs/modules.md](docs/modules.md#observability)). `get_resource_attributes` shipped ahead of it
 
-### Leaner services — from the PyFinBot review (2026-10-07)
-A review of PyFinBot and the adapters found framework-free code living in greentechhub-fastapi, and generic code
-PyFinBot hand-rolls because nothing here offers it. One PR each, in this order. fastapi's TODO (M5) and PyFinBot's
-`todo.md` hold the follow-ups that adopt them.
-
-- [ ] C7. `greentechhub-testing` pytest plugin (promoted from Ideas)
-  - **Why:** PyFinBot's `tests/conftest.py` has about 110 lines every service needs: SQLite savepoint
-    engine/connection/session, a client with dependency and session-factory overrides, re-registering auth after
-    `dependency_overrides.clear()`, `post_login` (the CSRF double-submit), `web_login` (the Secure cookie over
-    http), and `hx_triggers`. greentechhub-fastapi's own tests repeat the HX-Trigger parsing.
-  - **Scope:**
-    - a separate package, or a `greentechhub-fastapi[testing]` extra for the HTTP fixtures;
-    - plus `client_as(persona)` and fake stores.
-  - **Done when:** PyFinBot's `conftest.py` is its own fixtures only.
-
 ### Parked — until a consumer asks
 - A currency setting: greentechhub-ui's `money` filter takes its symbol per call (default `$`); a shared
   `locale.currency` would let a user's or app's setting drive it
