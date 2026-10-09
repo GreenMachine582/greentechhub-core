@@ -212,7 +212,8 @@ await asyncio.to_thread(reader.mark_seen, handled_uids)               # only aft
 - `IMAPConfig(host, username, password, port=993, mailbox="INBOX")` keeps the password out of its repr.
   `ImapReader(config, connect=imaplib.IMAP4_SSL)` opens one connection per call and always logs out.
 - `fetch(criteria)` returns `(uid, message)` pairs and doesn't mark anything seen, so a run that fails part-way can
-  be run again. `mark_seen(uids)` flags them afterwards.
+  be run again. A message deleted between the search and its fetch is left out. `mark_seen(uids)` flags them
+  afterwards.
 - `message_text(message)` is the first text/plain part, else the HTML part as plain text (`html_text`, without
   script or style). `received_at(message)` reads the Date header.
 - `imap_settings(scope=USER, group="Email", prefix="email.")` is the mailbox as five settings: `address` (the
