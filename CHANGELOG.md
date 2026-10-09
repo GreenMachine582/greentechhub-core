@@ -5,6 +5,18 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.14.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.13.0...v0.14.0) (2026-10-09)
+
+
+### Features
+
+* **testing:** savepoint database fixtures ([#70](https://github.com/GreenMachine582/greentechhub-core/issues/70)) ([ec3b481](https://github.com/GreenMachine582/greentechhub-core/commit/ec3b481664baa54bc3c9f0ab14f0d92c3b15953e))
+
+
+### Bug Fixes
+
+* **email:** ImapReader.fetch skips a message deleted since the search ([#69](https://github.com/GreenMachine582/greentechhub-core/issues/69)) ([6739e3b](https://github.com/GreenMachine582/greentechhub-core/commit/6739e3b32717839146336270a1d68f548060078c))
+
 ## [0.13.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.12.0...v0.13.0) (2026-10-07)
 
 
