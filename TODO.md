@@ -24,6 +24,18 @@ PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped; see the CHANGELOG.
     - scopes are permission strings; capping them by the owner's grants is the adapter's job;
     - an `ApiTokenStoreContract` in `greentechhub_core.contracts`.
   - **Done when:** both stores pass the contract, and fastapi can build its token views on it.
+- [ ] `feat(background): held_lock`
+  - **Why:** PyFinBot wraps `held` by hand for its syncs: a cached `FileLock` under `settings.lock_directory()`
+    (`sync_guard`), and a hashed per-user lock name so it's safe as a filename (`email_sync_lock`).
+  - **Scope:** `held_lock(settings, name, ttl=...)`, the same yield-True-or-False context manager as `held` on a
+    `FileLock` cached per lock directory, plus `lock_name(*parts)` that hashes the parts into a filename-safe name.
+  - **Done when:** PyFinBot's `sync_guard` and `email_sync_lock` are gone.
+- [ ] `feat(config): retired settings`
+  - **Why:** PyFinBot warns about env vars it no longer reads (`_warn_retired`), so a deployment notices a dropped
+    setting instead of silently losing it.
+  - **Scope:** a `retired` class attribute on `GTHBaseSettings` (name → what replaced it). Each one still set in the
+    environment or `.env` logs one warning at startup, and nothing else changes.
+  - **Done when:** PyFinBot's `_warn_retired` is gone.
 
 ### Identity
 - [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
