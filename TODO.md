@@ -8,8 +8,22 @@
 
 ## 🗺️ Milestones
 
-Cross-repo order (with greentechhub-fastapi and greentechhub-ui): Accounts (M1) → Notifications & email (M2) →
-consumers live (M3) → ui breaking release (M4) → display & data (M5) → v1.0.
+Cross-repo order (with greentechhub-fastapi and greentechhub-ui): consumers live (M3) → ui breaking release (M4) →
+PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped; see the CHANGELOG.
+
+### M6 PyFinBot ready — core's share
+- [ ] `feat(security): API token store`, for greentechhub-fastapi's personal API tokens (its M6.3)
+  - **Why:** PyFinBot's API is used from scripts with 24h login JWTs, which can't be revoked.
+  - **Scope:**
+    - an `ApiTokenStore` protocol (async with `_sync` twins), with `InMemoryApiTokenStore` and
+      `SQLAlchemyApiTokenStore` over a `gth_api_tokens` table (`api_tokens_table(metadata)`);
+    - a token is a random secret from `generate_token`, stored only as a hash. `create(owner, name, scopes,
+      expires_at=None)` returns the plaintext once;
+    - `verify(plaintext)` returns the token's owner and scopes (or None when unknown, revoked or expired) and
+      records its last use. `list_for(owner)` and `revoke(id)` round it out;
+    - scopes are permission strings; capping them by the owner's grants is the adapter's job;
+    - an `ApiTokenStoreContract` in `greentechhub_core.contracts`.
+  - **Done when:** both stores pass the contract, and fastapi can build its token views on it.
 
 ### Identity
 - [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
@@ -29,7 +43,6 @@ template (their TODOs list those halves).
 - A settings-backed `FeatureFlagProvider` next to the env/file one, so flags can be toggled per app, user or group
 - A job scheduler on `Lock`/`FileLock` that records each run (status, duration, output) — BottleBot scrapes,
   PyFinBot syncs
-- Personal API tokens — a hashed token store with permission scopes and last-used time, on `generate_token`
 - A `FileStore` protocol for attachments (local disk first, then S3/MinIO)
 - A shared tags/labels model
 - Webhooks — outbound (signed payloads, retries, a delivery log) and inbound (a signed payload becomes an
