@@ -1,5 +1,5 @@
 """greentechhub_core.sqlalchemy — SQLAlchemy-backed SettingsStore,
-GrantStore, AttemptStore, NotificationStore, TokenStore and AuditStore
+GrantStore, AttemptStore, NotificationStore, TokenStore, ApiTokenStore and AuditStore
 (docs/settings.md#storage-tables-shipped-sqlalchemy-extra), and
 filtering, sorting and paging helpers for a service's own selects (docs/query.md#sqlalchemy),
 behind the optional `[sqlalchemy]` extra.
@@ -21,6 +21,7 @@ except ImportError as exc:  # pragma: no cover - exercised only without the extr
         "greentechhub_core.sqlalchemy needs SQLAlchemy: pip install 'greentechhub-core[sqlalchemy]'"
     ) from exc
 
+from greentechhub_core.sqlalchemy.api_tokens import SQLAlchemyApiTokenStore
 from greentechhub_core.sqlalchemy.audit import SQLAlchemyAuditStore
 from greentechhub_core.sqlalchemy.database import Database
 from greentechhub_core.sqlalchemy.grants import SQLAlchemyGrantStore
@@ -36,12 +37,14 @@ from greentechhub_core.sqlalchemy.query import (
 )
 from greentechhub_core.sqlalchemy.settings import SQLAlchemySettingsStore
 from greentechhub_core.sqlalchemy.tables import (
+    API_TOKENS_TABLE,
     AUDIT_LOG_TABLE,
     LOGIN_ATTEMPTS_TABLE,
     NOTIFICATIONS_TABLE,
     ONE_TIME_TOKENS_TABLE,
     ROLE_GRANTS_TABLE,
     SETTINGS_TABLE,
+    api_tokens_table,
     audit_log_table,
     login_attempts_table,
     notifications_table,
@@ -52,6 +55,7 @@ from greentechhub_core.sqlalchemy.tables import (
 from greentechhub_core.sqlalchemy.throttle import SQLAlchemyAttemptStore
 
 __all__ = [
+    "API_TOKENS_TABLE",
     "AUDIT_LOG_TABLE",
     "Database",
     "LOGIN_ATTEMPTS_TABLE",
@@ -59,6 +63,7 @@ __all__ = [
     "ONE_TIME_TOKENS_TABLE",
     "ROLE_GRANTS_TABLE",
     "SETTINGS_TABLE",
+    "SQLAlchemyApiTokenStore",
     "SQLAlchemyAuditStore",
     "SQLAlchemyAttemptStore",
     "SQLAlchemyGrantStore",
@@ -70,6 +75,7 @@ __all__ = [
     "page_sync",
     "paginate",
     "paginate_sync",
+    "api_tokens_table",
     "audit_log_table",
     "login_attempts_table",
     "notifications_table",

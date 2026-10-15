@@ -54,19 +54,25 @@ forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a
 | `environment` (`ENVIRONMENT`) | `"development"` | the service; the CORS opt-in below | `"development"` or `"production"` |
 | `lock_dir` (`LOCK_DIR`) | `""` | `lock_directory()` | Where `FileLock`s live: this, else `<tempdir>/gth-locks`. Every worker and replica on a host must share it |
 
-**Two opt-ins for development.** Both are class attributes on the service's `Settings`, off by default, so services
-that don't set them see no change:
+**Opt-ins.** These are class attributes on the service's `Settings`, off by default, so services that don't set
+them see no change:
 
 ```python
 class Settings(GTHBaseSettings):
     ephemeral_secret_key = True            # SECRET_KEY unset → a random key per process, with a warning
     cors_allow_all_in_development = True   # development + empty CORS_ALLOWED_ORIGINS → "*"
+    retired = {"GMAIL_ADDRESS": "each user sets their own email account at /settings"}
 ```
 
 - `ephemeral_secret_key`: without it `SECRET_KEY` is required. With it, an unset key becomes a random one and a
   warning says that every token and session cookie stops working on restart.
 - `cors_allow_all_in_development`: in development an empty `CORS_ALLOWED_ORIGINS` becomes `"*"`, for local and
   Swagger testing. In production an empty one warns that no cross-origin request will be allowed.
+- `retired`: env vars the service no longer reads, each mapped to what replaced it. One still set in the
+  environment or `.env` gives a warning at startup, `"GMAIL_ADDRESS is no longer used: each user sets their own
+  email account at /settings. Remove them from the environment/.env."`, one per replacement, so a deployment
+  notices a dropped setting instead of silently losing it. It's otherwise ignored: a retired name in `.env` doesn't
+  fail validation, even with the default `extra="forbid"`.
 
 A service that already declares one of these in SCREAMING_CASE (`TRUSTED_PROXIES: str = ""`) keeps working: both
 fields read the same env var.
@@ -371,6 +377,7 @@ db.override(async_sessionmaker(bind=test_connection, ...))                    # 
 | `role_grants_table(metadata)` | `gth_role_grants`: `subject`, `role` (together the primary key), `granted_at` |
 | `login_attempts_table(metadata)` | `gth_login_attempts`: `key` (the primary key), `failures`, `window_start`, `locked_until` (see [modules.md](modules.md#login-throttling)) |
 | `one_time_tokens_table(metadata)` | `gth_one_time_tokens`: `token_hash` (the primary key; SHA-256 of the token), `purpose`, `subject`, `created_at`, `expires_at`, `used_at`, indexed on (`subject`, `purpose`) (see [modules.md](modules.md#single-use-tokens)) |
+| `api_tokens_table(metadata)` | `gth_api_tokens`: `id` (the primary key), `token_hash` (unique; SHA-256 of the token), `owner`, `name`, `scopes` (JSON), `created_at`, `expires_at`, `last_used_at`, indexed on `owner` (see [modules.md](modules.md#api-tokens)) |
 | `audit_log_table(metadata)` | `gth_audit_log`: `id` (the primary key), `at`, `actor`, `action`, `target_type`, `target_id`, `summary`, `details` (JSON), indexed on `at`, `actor` and (`target_type`, `target_id`) (see [modules.md](modules.md#audit-log)) |
 | `notifications_table(metadata)` | `gth_notifications`: `id` (the primary key), `recipient`, `category`, `kind`, `title`, `message`, `icon`, `action_label`, `action_url`, `created_at`, `read_at`, indexed on (`recipient`, `read_at`) (see [modules.md](modules.md#notifications)) |
 | `SQLAlchemySettingsStore(table, ...)` | A `SettingsStore` over `gth_settings` |
@@ -378,9 +385,10 @@ db.override(async_sessionmaker(bind=test_connection, ...))                    # 
 | `SQLAlchemyAttemptStore(table, ...)` | An `AttemptStore` over `gth_login_attempts`, for `LoginThrottle` |
 | `SQLAlchemyNotificationStore(table, ...)` | A `NotificationStore` over `gth_notifications` |
 | `SQLAlchemyTokenStore(table, ...)` | A `TokenStore` over `gth_one_time_tokens`, for `OneTimeTokens` |
+| `SQLAlchemyApiTokenStore(table, ...)` | An `ApiTokenStore` over `gth_api_tokens` |
 | `SQLAlchemyAuditStore(table, ...)` | An `AuditStore` over `gth_audit_log` |
 
-All six stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
+All seven stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
 `async_sessionmaker`, for the async ones), or both. Calling a method whose factory wasn't given raises
 `RuntimeError`. Each call runs in its own transaction.
 
@@ -407,7 +415,7 @@ settings = Settings(registry, SQLAlchemySettingsStore(settings_rows, async_sessi
 
 **Alembic recipe.** The tables are ordinary `Table`s on your metadata, so migrations are the usual autogenerate:
 
-1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`audit_log_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
+1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`api_tokens_table`/`audit_log_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
    (calling them again on the same metadata returns the existing table, so the app and `env.py` can both call them).
 2. `alembic revision --autogenerate -m "gth settings and role grants"` detects them.
 3. Review the revision and `alembic upgrade head`.

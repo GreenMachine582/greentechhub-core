@@ -12,13 +12,20 @@ extended period — wrapping either version now risks a rewrite before this
 package has a single real consumer to validate the wrapper against. Land
 them once a consumer actually needs ≥2 scheduled jobs, not on a fixed
 version.
+
+`held_lock(settings, name, ttl=...)` is the usual entry point: `held` on a
+FileLock in the service's lock_directory(), cached per directory, with
+`lock_name(prefix, *parts)` for names built from user data.
 """
 
+import hashlib
 import os
+import re
 import sys
+import threading
 import time
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from typing import Protocol, TextIO
 
@@ -171,3 +178,63 @@ def held(lock: Lock, name: str, ttl: float) -> Iterator[bool]:
     finally:
         if acquired:
             lock.release(name)
+
+
+_SAFE_NAME = re.compile(r"[A-Za-z0-9._-]+")
+
+
+def lock_name(prefix: str, *parts: str) -> str:
+    """A filename-safe lock name: `prefix`, plus a hash of `parts` when given.
+
+    The prefix stays readable, so a lock file still says what it's for; the
+    parts (a user's subject, an email address, a URL) can be anything:
+
+        lock_name("email-sync", user.subject)  # "email-sync-3f2a…" (16 hex)
+
+    A prefix with characters other than letters, digits, ".", "_" and "-"
+    raises ValueError.
+    """
+    if not _SAFE_NAME.fullmatch(prefix):
+        raise ValueError(f"lock name prefix {prefix!r} must be letters, digits, '.', '_' or '-'")
+    if not parts:
+        return prefix
+    digest = hashlib.sha256("\0".join(parts).encode("utf-8")).hexdigest()[:16]
+    return f"{prefix}-{digest}"
+
+
+class _HasLockDirectory(Protocol):
+    def lock_directory(self) -> str: ...
+
+
+_file_locks: dict[Path, FileLock] = {}
+_file_locks_guard = threading.Lock()
+
+
+def file_lock_for(directory: str | Path) -> FileLock:
+    """The process's one FileLock for `directory`, created on first use."""
+    key = Path(directory).resolve()
+    with _file_locks_guard:
+        lock = _file_locks.get(key)
+        if lock is None:
+            lock = _file_locks[key] = FileLock(directory=key)
+        return lock
+
+
+def held_lock(
+    settings: _HasLockDirectory, name: str, *, ttl: float
+) -> AbstractContextManager[bool]:
+    """`held` on the FileLock in `settings.lock_directory()` (a GTHBaseSettings,
+    or anything with that method) — every worker and replica on the host
+    sharing that directory shares the lock:
+
+        with held_lock(settings, "market-sync-ASX", ttl=15 * 60) as acquired:
+            if not acquired:
+                return "already running"
+            run_the_sync()
+
+    `name` becomes a file name, so it must be letters, digits, ".", "_" or
+    "-" (ValueError otherwise); build one from user data with lock_name.
+    """
+    if not _SAFE_NAME.fullmatch(name):
+        raise ValueError(f"lock name {name!r} isn't filename-safe; build it with lock_name()")
+    return held(file_lock_for(settings.lock_directory()), name, ttl)

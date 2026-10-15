@@ -1,3 +1,4 @@
+from greentechhub_core.contracts.api_tokens import ApiTokenStoreContract
 from greentechhub_core.contracts.audit import AuditStoreContract
 from greentechhub_core.contracts.feature_flags import FeatureFlagProviderContract
 from greentechhub_core.contracts.health import HealthCheckContract
@@ -10,6 +11,7 @@ from greentechhub_core.contracts.settings import SettingsStoreContract
 from greentechhub_core.contracts.throttle import AttemptStoreContract
 
 __all__ = [
+    "ApiTokenStoreContract",
     "AuditStoreContract",
     "AttemptStoreContract",
     "FeatureFlagProviderContract",
