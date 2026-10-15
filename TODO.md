@@ -12,12 +12,6 @@ Cross-repo order (with greentechhub-fastapi and greentechhub-ui): consumers live
 PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped; see the CHANGELOG.
 
 ### M6 PyFinBot ready — core's share
-- [ ] `feat(config): retired settings`
-  - **Why:** PyFinBot warns about env vars it no longer reads (`_warn_retired`), so a deployment notices a dropped
-    setting instead of silently losing it.
-  - **Scope:** a `retired` class attribute on `GTHBaseSettings` (name → what replaced it). Each one still set in the
-    environment or `.env` logs one warning at startup, and nothing else changes.
-  - **Done when:** PyFinBot's `_warn_retired` is gone.
 - [ ] `fix(testing)`: a store's writes survive a route's rollback
   - **Why:** in `testing.sqlalchemy`, every session shares the test's one connection, so their SAVEPOINTs nest.
     PyFinBot's audit tests (#89) hit this sequence:
