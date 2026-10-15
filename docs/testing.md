@@ -40,6 +40,13 @@ def gth_session_class():  # optional; defaults to SQLAlchemy's AsyncSession
 - `gth_connection` wraps each test in a transaction that's rolled back afterwards. Sessions from
   `gth_sessionmaker` (and `gth_session`) join it with a SAVEPOINT, so tests never see each other's rows, even
   when the code under test commits.
+- Those sessions all share the test's one connection, so their SAVEPOINTs nest. A session that only read releases
+  its SAVEPOINT when it closes, rather than rolling back to it. A row another session committed meanwhile, such as
+  an audit entry a store records while a route's session is still open, therefore survives and can be read back,
+  as in production. A session with uncommitted writes (a flush, or any statement but a SELECT, `text()` included)
+  still rolls them back on close, so a missing commit still fails a test. One gap from production remains: if that
+  writing session closes without committing, it also takes with it a store's write that committed inside its
+  SAVEPOINT.
 - `gth_database(db)` is a context manager that points a `greentechhub_core.sqlalchemy.Database` at the test
   connection, and back again on exit. Use it so the app's `get_session`, its settings and grant stores, and
   its readiness check all use the test's transaction.
