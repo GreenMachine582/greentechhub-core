@@ -321,6 +321,23 @@ fiscal_year_label(2024, start_month=1)         # "2024": the calendar year
   so a route can rebuild the same range with `fiscal_year_bounds`.
 - `start_month` outside 1–12 raises `ValueError`.
 
+## Exports
+
+`exports.py` turns rows into CSV text, with no framework involved, so a web download (greentechhub-fastapi's
+`csv_download` is built on it) and a CLI's export write the same file:
+
+```python
+from greentechhub_core.exports import csv_text, csv_value
+
+rows = [["date", "amount", "notes"], *([csv_value(t.date), csv_value(t.amount), t.notes] for t in items)]
+Path("transactions.csv").write_text(csv_text(rows), encoding="utf-8")
+```
+
+- `csv_text(rows, *, bom=True)` puts `BOM` first, a UTF-8 byte-order mark. Without it Excel reads a CSV as
+  Windows-1252, so "2025–26" shows up as "2025â€“26". Pass `bom=False` for a consumer that doesn't want one.
+- `csv_value(value)` formats a cell: `""` for `None`, a `Decimal` at full precision with no trailing zeros and never
+  in E-notation (`12.50` → `"12.5"`), a date or datetime in ISO format, anything else `str()`.
+
 ## Background tasks
 
 `background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
