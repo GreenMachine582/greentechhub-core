@@ -2,6 +2,7 @@
 service's own Settings extends.
 """
 
+import os
 import secrets
 import tempfile
 import warnings
@@ -83,6 +84,30 @@ class GTHBaseSettings(BaseSettings):
     #: (frictionless local and Swagger testing), and in production an empty
     #: one warns that no cross-origin request will be allowed.
     cors_allow_all_in_development: ClassVar[bool] = False
+
+    #: Env vars the service no longer reads → what replaced them. Each one
+    #: still set (in the environment or .env) warns once at startup, grouped
+    #: by replacement, and is otherwise ignored.
+    retired: ClassVar[dict[str, str]] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _retired_settings(cls, data: Any) -> Any:
+        if not cls.retired or not isinstance(data, dict):
+            return data
+        set_names = {k.lower() for k, v in os.environ.items() if v} | {k.lower() for k in data}
+        found = [name for name in cls.retired if name.lower() in set_names]
+        retired = {name.lower() for name in cls.retired}
+        data = {k: v for k, v in data.items() if k.lower() not in retired}
+        for reason in dict.fromkeys(cls.retired[name] for name in found):
+            names = [name for name in found if cls.retired[name] == reason]
+            verb = "is" if len(names) == 1 else "are"
+            warnings.warn(
+                f"{', '.join(names)} {verb} no longer used: {reason}. "
+                "Remove them from the environment/.env.",
+                stacklevel=2,
+            )
+        return data
 
     @model_validator(mode="before")
     @classmethod

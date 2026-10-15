@@ -54,19 +54,25 @@ forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a
 | `environment` (`ENVIRONMENT`) | `"development"` | the service; the CORS opt-in below | `"development"` or `"production"` |
 | `lock_dir` (`LOCK_DIR`) | `""` | `lock_directory()` | Where `FileLock`s live: this, else `<tempdir>/gth-locks`. Every worker and replica on a host must share it |
 
-**Two opt-ins for development.** Both are class attributes on the service's `Settings`, off by default, so services
-that don't set them see no change:
+**Opt-ins.** These are class attributes on the service's `Settings`, off by default, so services that don't set
+them see no change:
 
 ```python
 class Settings(GTHBaseSettings):
     ephemeral_secret_key = True            # SECRET_KEY unset → a random key per process, with a warning
     cors_allow_all_in_development = True   # development + empty CORS_ALLOWED_ORIGINS → "*"
+    retired = {"GMAIL_ADDRESS": "each user sets their own email account at /settings"}
 ```
 
 - `ephemeral_secret_key`: without it `SECRET_KEY` is required. With it, an unset key becomes a random one and a
   warning says that every token and session cookie stops working on restart.
 - `cors_allow_all_in_development`: in development an empty `CORS_ALLOWED_ORIGINS` becomes `"*"`, for local and
   Swagger testing. In production an empty one warns that no cross-origin request will be allowed.
+- `retired`: env vars the service no longer reads, each mapped to what replaced it. One still set in the
+  environment or `.env` gives a warning at startup, `"GMAIL_ADDRESS is no longer used: each user sets their own
+  email account at /settings. Remove them from the environment/.env."`, one per replacement, so a deployment
+  notices a dropped setting instead of silently losing it. It's otherwise ignored: a retired name in `.env` doesn't
+  fail validation, even with the default `extra="forbid"`.
 
 A service that already declares one of these in SCREAMING_CASE (`TRUSTED_PROXIES: str = ""`) keeps working: both
 fields read the same env var.

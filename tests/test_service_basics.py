@@ -88,3 +88,83 @@ def test_no_cors_warning_without_the_opt_in(monkeypatch):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         GTHBaseSettings(_env_file=None)
+
+
+_MOVED = "each user sets their own email account at /settings"
+
+
+class _Retiring(GTHBaseSettings):
+    retired: ClassVar[dict[str, str]] = {
+        "GMAIL_ADDRESS": _MOVED,
+        "GMAIL_MAILBOX": _MOVED,
+        "ACCESS_TOKEN_EXPIRE_MINUTES": "API tokens last 24 hours",
+    }
+
+
+@pytest.fixture
+def _no_retired_env(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "s")
+    for name in _Retiring.retired:
+        monkeypatch.delenv(name, raising=False)
+
+
+def _retired_warnings(record) -> list[str]:
+    return [str(w.message) for w in record if "no longer used" in str(w.message)]
+
+
+@pytest.mark.usefixtures("_no_retired_env")
+def test_a_retired_env_var_warns_naming_its_replacement(monkeypatch):
+    monkeypatch.setenv("GMAIL_ADDRESS", "me@example.com")
+    with pytest.warns(UserWarning) as record:
+        _Retiring(_env_file=None)
+    assert _retired_warnings(record) == [
+        f"GMAIL_ADDRESS is no longer used: {_MOVED}. Remove them from the environment/.env."
+    ]
+
+
+@pytest.mark.usefixtures("_no_retired_env")
+def test_retired_env_vars_warn_once_per_replacement(monkeypatch):
+    for name in _Retiring.retired:
+        monkeypatch.setenv(name, "x")
+    with pytest.warns(UserWarning) as record:
+        _Retiring(_env_file=None)
+    assert _retired_warnings(record) == [
+        f"GMAIL_ADDRESS, GMAIL_MAILBOX are no longer used: {_MOVED}. "
+        "Remove them from the environment/.env.",
+        "ACCESS_TOKEN_EXPIRE_MINUTES is no longer used: API tokens last 24 hours. "
+        "Remove them from the environment/.env.",
+    ]
+
+
+@pytest.mark.usefixtures("_no_retired_env")
+def test_an_unset_or_empty_retired_env_var_is_quiet(monkeypatch):
+    monkeypatch.setenv("GMAIL_MAILBOX", "")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _Retiring(_env_file=None)
+
+
+@pytest.mark.usefixtures("_no_retired_env")
+def test_a_lowercase_env_var_name_matches(monkeypatch):
+    monkeypatch.setenv("gmail_address", "me@example.com")
+    with pytest.warns(UserWarning, match="GMAIL_ADDRESS is no longer used"):
+        _Retiring(_env_file=None)
+
+
+@pytest.mark.usefixtures("_no_retired_env")
+def test_a_retired_name_in_dotenv_warns_instead_of_failing(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("GMAIL_ADDRESS=me@example.com\n", encoding="utf-8")
+    with pytest.warns(UserWarning, match="GMAIL_ADDRESS is no longer used"):
+        settings = _Retiring(_env_file=env_file)
+    assert settings.secret_key == "s"
+    with pytest.raises(ValidationError):  # without `retired` it's an unknown extra
+        GTHBaseSettings(_env_file=env_file)
+
+
+def test_no_retired_settings_means_no_warning(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "s")
+    monkeypatch.setenv("GMAIL_ADDRESS", "me@example.com")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        GTHBaseSettings(_env_file=None)
