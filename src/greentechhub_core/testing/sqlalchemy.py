@@ -28,7 +28,11 @@ Fixtures:
     gth_connection: one connection per test, inside a transaction rolled
         back at the end.
     gth_sessionmaker: sessions on gth_connection; each one's commit only
-        releases a SAVEPOINT, so the rollback still undoes it.
+        releases a SAVEPOINT, so the rollback still undoes it. A session
+        that only read releases its SAVEPOINT on close too, so a write
+        another session committed meanwhile (an audit store's, inside a
+        route's request) isn't undone with it, as in production. One with
+        uncommitted writes rolls them back, also as in production.
     gth_session: one session from gth_sessionmaker.
     gth_database: gth_database(db) is a context manager that points a
         greentechhub_core.sqlalchemy Database at gth_sessionmaker, and back
@@ -39,6 +43,7 @@ Needs pytest-asyncio, SQLAlchemy and aiosqlite: the `[testing]` extra.
 
 from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
+from functools import cache
 from typing import Any
 
 try:
@@ -53,6 +58,7 @@ try:
         async_sessionmaker,
         create_async_engine,
     )
+    from sqlalchemy.orm import ORMExecuteState, Session
 except ImportError as exc:  # pragma: no cover - exercised only without the extra
     raise ImportError(
         "greentechhub_core.testing.sqlalchemy needs pytest-asyncio, SQLAlchemy and aiosqlite: "
@@ -106,11 +112,51 @@ async def gth_connection(gth_engine: AsyncEngine) -> AsyncIterator[AsyncConnecti
             await conn.rollback()
 
 
+_WROTE = "gth_wrote"
+
+
+@cache
+def _releasing(sync_session_class: type[Session]) -> type[Session]:
+    """`sync_session_class` (e.g. SQLModel's Session, keeping its exec()),
+    except that closing it after only reading releases its SAVEPOINT rather
+    than rolling back to it.
+
+    Every session shares the test's one connection, so SAVEPOINTs nest: a
+    store session's committed write inside a route session's still-open
+    SAVEPOINT would be undone when the route session closes. A session
+    counts as having written once it flushes or runs anything but a SELECT
+    (text() included), and then closes with a rollback as before.
+    """
+
+    class ReleasingSession(sync_session_class):
+        def close(self) -> None:
+            pending = self.new or self.dirty or self.deleted
+            if self.in_transaction() and not pending and not self.info.get(_WROTE):
+                self.commit()
+            super().close()
+
+    def _executed(state: ORMExecuteState) -> None:
+        if not state.is_select:
+            state.session.info[_WROTE] = True
+
+    def _flushed(session: Session, flush_context: Any) -> None:
+        session.info[_WROTE] = True
+
+    event.listen(ReleasingSession, "do_orm_execute", _executed)
+    event.listen(ReleasingSession, "after_flush", _flushed)
+    name = f"Releasing{sync_session_class.__name__}"
+    ReleasingSession.__name__ = ReleasingSession.__qualname__ = name
+    return ReleasingSession
+
+
 @pytest.fixture
 def gth_sessionmaker(
     gth_connection: AsyncConnection, gth_session_class: type[AsyncSession]
 ) -> async_sessionmaker:
+    # Database.session_factory copies these options, sync_session_class
+    # included, so the stores' sessions under gth_database release too.
     return async_sessionmaker(bind=gth_connection, class_=gth_session_class,
+                              sync_session_class=_releasing(gth_session_class.sync_session_class),
                               join_transaction_mode="create_savepoint", expire_on_commit=False)
 
 

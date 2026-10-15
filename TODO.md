@@ -9,24 +9,7 @@
 ## 🗺️ Milestones
 
 Cross-repo order (with greentechhub-fastapi and greentechhub-ui): consumers live (M3) → ui breaking release (M4) →
-PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped; see the CHANGELOG.
-
-### M6 PyFinBot ready — core's share
-- [ ] `fix(testing)`: a store's writes survive a route's rollback
-  - **Why:** in `testing.sqlalchemy`, every session shares the test's one connection, so their SAVEPOINTs nest.
-    PyFinBot's audit tests (#89) hit this sequence:
-    1. a route's session opens a SAVEPOINT (it read a row) and stays open until the response;
-    2. the audit store's `record()`, through `db.session_factory`, opens its SAVEPOINT inside that one, inserts and
-       releases it;
-    3. the route session closes with a rollback to its own SAVEPOINT, which undoes the entry.
-
-    The entry can't be read back from the table. In production each session has its own connection, so nothing is
-    lost. PyFinBot spies on `record()` instead.
-  - **Scope (to decide in the PR):** either sessions from `gth_sessionmaker` that don't keep a SAVEPOINT open when
-    they only read, or the limitation documented in `docs/testing.md` with a fixture that records a store's writes
-    (e.g. swapping in `InMemoryAuditStore`).
-  - **Done when:** PyFinBot's `test_web_audit.py` reads its entries back from `gth_audit_log` instead of spying on
-    `record()`.
+PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped, and so has core's share of M6; see the CHANGELOG.
 
 ### Identity
 - [ ] `AuthentikIdentityProvider`: validate `raw.headers["X-authentik-jwt"]` (when configured) against the issuer's
