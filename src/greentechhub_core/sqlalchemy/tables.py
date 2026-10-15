@@ -1,5 +1,5 @@
 """sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts, gth_notifications,
-gth_one_time_tokens and gth_audit_log tables, defined
+gth_one_time_tokens, gth_api_tokens and gth_audit_log tables, defined
 on a MetaData the service passes in so its own Alembic migrates them.
 
 Core holds no data and owns no engine: these functions only add Table
@@ -15,6 +15,7 @@ ROLE_GRANTS_TABLE = "gth_role_grants"
 LOGIN_ATTEMPTS_TABLE = "gth_login_attempts"
 NOTIFICATIONS_TABLE = "gth_notifications"
 ONE_TIME_TOKENS_TABLE = "gth_one_time_tokens"
+API_TOKENS_TABLE = "gth_api_tokens"
 AUDIT_LOG_TABLE = "gth_audit_log"
 
 APP_SUBJECT = ""
@@ -136,6 +137,35 @@ def one_time_tokens_table(metadata: sa.MetaData) -> sa.Table:
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
         sa.Index("ix_gth_one_time_tokens_subject_purpose", "subject", "purpose"),
+    )
+
+
+def api_tokens_table(metadata: sa.MetaData) -> sa.Table:
+    """gth_api_tokens: one row per personal API token (security.api_tokens).
+
+    id            32 hex characters
+    token_hash    SHA-256 hex of the token (unique) — the token itself is never stored
+    owner         whose it is (indexed)
+    name          the owner's label for it
+    scopes        JSON list of permission strings, sorted
+    created_at
+    expires_at    when it stops working, or NULL for never
+    last_used_at  when it was last accepted, or NULL
+    """
+    if API_TOKENS_TABLE in metadata.tables:
+        return metadata.tables[API_TOKENS_TABLE]
+    return sa.Table(
+        API_TOKENS_TABLE,
+        metadata,
+        sa.Column("id", sa.String(32), primary_key=True),
+        sa.Column("token_hash", sa.String(64), nullable=False, unique=True),
+        sa.Column("owner", sa.String(255), nullable=False),
+        sa.Column("name", sa.String(255), nullable=False),
+        sa.Column("scopes", sa.JSON, nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Index("ix_gth_api_tokens_owner", "owner"),
     )
 
 

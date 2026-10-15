@@ -12,18 +12,6 @@ Cross-repo order (with greentechhub-fastapi and greentechhub-ui): consumers live
 PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped; see the CHANGELOG.
 
 ### M6 PyFinBot ready — core's share
-- [ ] `feat(security): API token store`, for greentechhub-fastapi's personal API tokens (its M6.3)
-  - **Why:** PyFinBot's API is used from scripts with 24h login JWTs, which can't be revoked.
-  - **Scope:**
-    - an `ApiTokenStore` protocol (async with `_sync` twins), with `InMemoryApiTokenStore` and
-      `SQLAlchemyApiTokenStore` over a `gth_api_tokens` table (`api_tokens_table(metadata)`);
-    - a token is a random secret from `generate_token`, stored only as a hash. `create(owner, name, scopes,
-      expires_at=None)` returns the plaintext once;
-    - `verify(plaintext)` returns the token's owner and scopes (or None when unknown, revoked or expired) and
-      records its last use. `list_for(owner)` and `revoke(id)` round it out;
-    - scopes are permission strings; capping them by the owner's grants is the adapter's job;
-    - an `ApiTokenStoreContract` in `greentechhub_core.contracts`.
-  - **Done when:** both stores pass the contract, and fastapi can build its token views on it.
 - [ ] `feat(background): held_lock`
   - **Why:** PyFinBot wraps `held` by hand for its syncs: a cached `FileLock` under `settings.lock_directory()`
     (`sync_guard`), and a hashed per-user lock name so it's safe as a filename (`email_sync_lock`).

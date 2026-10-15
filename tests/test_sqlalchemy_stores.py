@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from greentechhub_core.contracts.api_tokens import ApiTokenStoreContract
 from greentechhub_core.contracts.audit import AuditStoreContract
 from greentechhub_core.contracts.notifications import NotificationStoreContract
 from greentechhub_core.contracts.one_time import TokenStoreContract
@@ -17,12 +18,14 @@ from greentechhub_core.permissions import Permission, Role, RoleResolver
 from greentechhub_core.settings import Settings, SettingScope, SettingsRegistry
 from greentechhub_core.settings.builtins import USER_PREFERENCES
 from greentechhub_core.sqlalchemy import (
+    SQLAlchemyApiTokenStore,
     SQLAlchemyAttemptStore,
     SQLAlchemyAuditStore,
     SQLAlchemyGrantStore,
     SQLAlchemyNotificationStore,
     SQLAlchemySettingsStore,
     SQLAlchemyTokenStore,
+    api_tokens_table,
     audit_log_table,
     login_attempts_table,
     notifications_table,
@@ -41,7 +44,7 @@ def db(tmp_path):
     metadata = sa.MetaData()
     tables = (settings_table(metadata), role_grants_table(metadata), login_attempts_table(metadata),
               notifications_table(metadata), one_time_tokens_table(metadata),
-              audit_log_table(metadata))
+              audit_log_table(metadata), api_tokens_table(metadata))
     engine = sa.create_engine(url)
     metadata.create_all(engine)
     async_engine = create_async_engine(
@@ -54,6 +57,7 @@ def db(tmp_path):
         "notifications": tables[3],
         "tokens": tables[4],
         "audit": tables[5],
+        "api_tokens": tables[6],
         "session_factory": sessionmaker(engine),
         "async_session_factory": async_sessionmaker(async_engine),
     }
@@ -87,6 +91,12 @@ class TestSQLAlchemyTokenStoreContract(TokenStoreContract):
     @pytest.fixture
     def store(self, db) -> SQLAlchemyTokenStore:
         return SQLAlchemyTokenStore(db["tokens"], **_factories(db))
+
+
+class TestSQLAlchemyApiTokenStoreContract(ApiTokenStoreContract):
+    @pytest.fixture
+    def store(self, db, clock) -> SQLAlchemyApiTokenStore:
+        return SQLAlchemyApiTokenStore(db["api_tokens"], clock=clock, **_factories(db))
 
 
 class TestSQLAlchemyAuditStoreContract(AuditStoreContract):
