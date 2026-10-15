@@ -91,7 +91,7 @@ greentechhub-core/
 │   ├── background/
 │   │   ├── scheduler.py           # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
-│   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed)
+│   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed), held/held_lock, lock_name
 │   ├── sqlalchemy/                # optional `[sqlalchemy]` extra
 │   │   ├── tables.py              # settings/role_grants/login_attempts/notifications/one_time_tokens/api_tokens/audit_log tables on the service's MetaData
 │   │   ├── settings.py            # SQLAlchemySettingsStore

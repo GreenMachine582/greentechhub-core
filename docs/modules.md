@@ -325,16 +325,26 @@ fiscal_year_label(2024, start_month=1)         # "2024": the calendar year
 
 `background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
 
-`held(lock, name, ttl)` is the usual way to use one. It takes the lock without waiting for a `with` block, yields
-whether it got it, and releases it on exit (even on an exception) only if it did:
+`held_lock(settings, name, ttl=...)` is the usual way to use one. It takes the lock without waiting, for a `with`
+block, yields whether it got it, and releases it on exit (even on an exception) only if it did. The lock is a
+`FileLock` in `settings.lock_directory()`, one per directory per process (`file_lock_for`), so every worker and
+replica on the host that shares the directory shares the lock:
 
 ```python
-locks = FileLock(directory=settings.lock_directory())
-with held(locks, "market-sync-ASX", ttl=15 * 60) as acquired:
+from greentechhub_core.background import held_lock, lock_name
+
+with held_lock(settings, "market-sync-ASX", ttl=15 * 60) as acquired:
     if not acquired:
         ...  # another worker or replica is already running it
     run_the_sync()
+
+with held_lock(settings, lock_name("email-sync", user.subject), ttl=10 * 60) as acquired:
+    ...  # one lock per user: users don't block each other
 ```
+
+- A name becomes a file name, so it must be letters, digits, `.`, `_` or `-`; anything else raises `ValueError`.
+  `lock_name(prefix, *parts)` builds one from user data: the prefix as given, then a 16-hex hash of the parts.
+- `held(lock, name, ttl)` is the same context manager over any `Lock`, for a backend of your own.
 
 `background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
 

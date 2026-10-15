@@ -12,12 +12,6 @@ Cross-repo order (with greentechhub-fastapi and greentechhub-ui): consumers live
 PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped; see the CHANGELOG.
 
 ### M6 PyFinBot ready — core's share
-- [ ] `feat(background): held_lock`
-  - **Why:** PyFinBot wraps `held` by hand for its syncs: a cached `FileLock` under `settings.lock_directory()`
-    (`sync_guard`), and a hashed per-user lock name so it's safe as a filename (`email_sync_lock`).
-  - **Scope:** `held_lock(settings, name, ttl=...)`, the same yield-True-or-False context manager as `held` on a
-    `FileLock` cached per lock directory, plus `lock_name(*parts)` that hashes the parts into a filename-safe name.
-  - **Done when:** PyFinBot's `sync_guard` and `email_sync_lock` are gone.
 - [ ] `feat(config): retired settings`
   - **Why:** PyFinBot warns about env vars it no longer reads (`_warn_retired`), so a deployment notices a dropped
     setting instead of silently losing it.
