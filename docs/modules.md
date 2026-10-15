@@ -16,7 +16,7 @@ The full `TracerProvider`/`MeterProvider`/exporter setup stays deferred until th
 
 ## Security
 
-`passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins and `one_time.py` issues single-use link tokens (both below). Framework-independent primitives only.
+`passwords.py` provides bcrypt hash/verify functions so every service uses one hashing scheme instead of each rolling its own; `tokens.py` generates CSRF/opaque tokens (binding them to a request/response is adapter-layer); `redact.py` scrubs secrets from log lines before they hit `logging`; `throttle.py` locks out repeated failed logins, `one_time.py` issues single-use link tokens and `api_tokens.py` stores personal API tokens (all below). Framework-independent primitives only.
 
 **New-password checks.** `password_problem(new, confirm, *, min_length=8, current=None)` returns the first problem
 as `(field, message)`, with `field` either `"new"` or `"confirm"`, or `None` when the password is fine. It checks
@@ -94,6 +94,38 @@ token = await tokens.issue(user.subject, "password_reset")       # email f"{base
 subject = await tokens.redeem(token, "password_reset")           # on the reset form's POST
 if subject is None:
     ...  # "This link has expired or was already used."
+```
+
+### API tokens
+
+`api_tokens.py` stores personal API tokens: credentials a person creates for their own scripts, which unlike a login
+JWT can be revoked at any time.
+
+- `create(owner, name, scopes, expires_at=None)` returns the new `ApiToken` and its plaintext, a fresh
+  `generate_token()`. That's the only time the plaintext exists. The store keeps only its SHA-256 (`token_hash`),
+  as for single-use tokens. An empty `owner` or `name`, or an `expires_at` that isn't in the future, raises
+  `ValueError`.
+- `verify(plaintext)` returns the token with `last_used_at` set to now, or `None` if it's unknown, revoked or
+  expired.
+- `list_for(owner)` returns the owner's tokens, newest first, expired ones included, so a settings page can show each
+  one's name, scopes, expiry and last use.
+- `revoke(token_id, owner=None)` deletes a token and returns whether it did. Pass `owner` from a "revoke my token"
+  view: another person's token id then deletes nothing.
+- `scopes` are permission strings, stored as given. Capping them by the owner's grants, when a token is created and
+  each time it's used, is the adapter's job (greentechhub-fastapi's personal API tokens).
+- The tokens live in an `ApiTokenStore`: `InMemoryApiTokenStore`, or `SQLAlchemyApiTokenStore` over
+  `gth_api_tokens` (`[sqlalchemy]` extra). Both take a `clock` for tests. `ApiTokenStoreContract` checks any
+  implementation. Every method has a `_sync` twin.
+
+```python
+from greentechhub_core.sqlalchemy import SQLAlchemyApiTokenStore, api_tokens_table
+
+api_tokens = SQLAlchemyApiTokenStore(api_tokens_table(Base.metadata), async_session_factory=Session)
+token, plaintext = await api_tokens.create(user.subject, "backup script", {"stock.read"})
+...                                                    # show plaintext once
+found = await api_tokens.verify(bearer)                # on each API request
+if found is None:
+    ...  # 401
 ```
 
 ## Notifications

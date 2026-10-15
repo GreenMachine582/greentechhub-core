@@ -371,6 +371,7 @@ db.override(async_sessionmaker(bind=test_connection, ...))                    # 
 | `role_grants_table(metadata)` | `gth_role_grants`: `subject`, `role` (together the primary key), `granted_at` |
 | `login_attempts_table(metadata)` | `gth_login_attempts`: `key` (the primary key), `failures`, `window_start`, `locked_until` (see [modules.md](modules.md#login-throttling)) |
 | `one_time_tokens_table(metadata)` | `gth_one_time_tokens`: `token_hash` (the primary key; SHA-256 of the token), `purpose`, `subject`, `created_at`, `expires_at`, `used_at`, indexed on (`subject`, `purpose`) (see [modules.md](modules.md#single-use-tokens)) |
+| `api_tokens_table(metadata)` | `gth_api_tokens`: `id` (the primary key), `token_hash` (unique; SHA-256 of the token), `owner`, `name`, `scopes` (JSON), `created_at`, `expires_at`, `last_used_at`, indexed on `owner` (see [modules.md](modules.md#api-tokens)) |
 | `audit_log_table(metadata)` | `gth_audit_log`: `id` (the primary key), `at`, `actor`, `action`, `target_type`, `target_id`, `summary`, `details` (JSON), indexed on `at`, `actor` and (`target_type`, `target_id`) (see [modules.md](modules.md#audit-log)) |
 | `notifications_table(metadata)` | `gth_notifications`: `id` (the primary key), `recipient`, `category`, `kind`, `title`, `message`, `icon`, `action_label`, `action_url`, `created_at`, `read_at`, indexed on (`recipient`, `read_at`) (see [modules.md](modules.md#notifications)) |
 | `SQLAlchemySettingsStore(table, ...)` | A `SettingsStore` over `gth_settings` |
@@ -378,9 +379,10 @@ db.override(async_sessionmaker(bind=test_connection, ...))                    # 
 | `SQLAlchemyAttemptStore(table, ...)` | An `AttemptStore` over `gth_login_attempts`, for `LoginThrottle` |
 | `SQLAlchemyNotificationStore(table, ...)` | A `NotificationStore` over `gth_notifications` |
 | `SQLAlchemyTokenStore(table, ...)` | A `TokenStore` over `gth_one_time_tokens`, for `OneTimeTokens` |
+| `SQLAlchemyApiTokenStore(table, ...)` | An `ApiTokenStore` over `gth_api_tokens` |
 | `SQLAlchemyAuditStore(table, ...)` | An `AuditStore` over `gth_audit_log` |
 
-All six stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
+All seven stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
 `async_sessionmaker`, for the async ones), or both. Calling a method whose factory wasn't given raises
 `RuntimeError`. Each call runs in its own transaction.
 
@@ -407,7 +409,7 @@ settings = Settings(registry, SQLAlchemySettingsStore(settings_rows, async_sessi
 
 **Alembic recipe.** The tables are ordinary `Table`s on your metadata, so migrations are the usual autogenerate:
 
-1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`audit_log_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
+1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`api_tokens_table`/`audit_log_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
    (calling them again on the same metadata returns the existing table, so the app and `env.py` can both call them).
 2. `alembic revision --autogenerate -m "gth settings and role grants"` detects them.
 3. Review the revision and `alembic upgrade head`.
