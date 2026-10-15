@@ -5,6 +5,20 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.15.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.14.0...v0.15.0) (2026-10-15)
+
+
+### Features
+
+* **background:** held_lock ([#77](https://github.com/GreenMachine582/greentechhub-core/issues/77)) ([d39c5c2](https://github.com/GreenMachine582/greentechhub-core/commit/d39c5c24427fb537ef7d304713a1becfbfb98f60))
+* **config:** retired settings ([#78](https://github.com/GreenMachine582/greentechhub-core/issues/78)) ([678d9aa](https://github.com/GreenMachine582/greentechhub-core/commit/678d9aa2de0b88d12c80a01fefdc373e14ad9bef))
+* **security:** API token store ([#76](https://github.com/GreenMachine582/greentechhub-core/issues/76)) ([546c1a4](https://github.com/GreenMachine582/greentechhub-core/commit/546c1a42e81ced3a5316f679bb623d7c4b294f9c))
+
+
+### Bug Fixes
+
+* **testing:** a store's writes survive a route's rollback ([#79](https://github.com/GreenMachine582/greentechhub-core/issues/79)) ([3b986c7](https://github.com/GreenMachine582/greentechhub-core/commit/3b986c746c1503d41f5b2770a9b2d1f6e0c5f471))
+
 ## [0.14.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.13.0...v0.14.0) (2026-10-09)
 
 
