@@ -12,9 +12,12 @@ auth, DevelopmentIdentityProvider, or forward auth all work the same. Three
 sources feed a person's roles, unioned:
   - group_roles — directory group → role names. Groups come from the
     identity itself: Authentik's header, or whatever a local login sets.
-  - bootstrap — subject → role names, fixed in config. Covers first-run
-    setup and recovery: the first admin exists before any group or grant
-    data does.
+  - bootstrap — subject (or username) → role names, fixed in config.
+    Covers first-run setup and recovery: the first admin exists before any
+    group or grant data does. A username works too, because a user-account
+    store (core's users module) generates the subject, so it isn't known
+    when the config is written; it's read off the identity when there is
+    one (IdentityLike only requires subject and groups).
   - grants — an optional GrantStore (grants.py) of in-app assignments.
 """
 
@@ -102,6 +105,9 @@ class RoleResolver:
 
     def _config_roles(self, identity: IdentityLike) -> frozenset[str]:
         names: set[str] = set(self._bootstrap.get(identity.subject, ()))
+        username = getattr(identity, "username", None)
+        if username:
+            names |= self._bootstrap.get(username, frozenset())
         for group in identity.groups:
             names |= self._group_roles.get(group, frozenset())
         return frozenset(names)
