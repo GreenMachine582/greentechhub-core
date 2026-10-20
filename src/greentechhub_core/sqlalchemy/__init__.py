@@ -1,5 +1,5 @@
 """greentechhub_core.sqlalchemy — SQLAlchemy-backed SettingsStore,
-GrantStore, AttemptStore, NotificationStore, TokenStore, ApiTokenStore and AuditStore
+GrantStore, AttemptStore, NotificationStore, TokenStore, ApiTokenStore, AuditStore and UserStore
 (docs/settings.md#storage-tables-shipped-sqlalchemy-extra), and
 filtering, sorting and paging helpers for a service's own selects (docs/query.md#sqlalchemy),
 behind the optional `[sqlalchemy]` extra.
@@ -9,7 +9,7 @@ naming the extra. Nothing else in core imports it, so core itself keeps no
 required SQLAlchemy dependency.
 
 The one place in core that joins top-level modules (settings/,
-permissions/, security/, notifications/ and audit/) on purpose, the way
+permissions/, security/, notifications/, audit/ and users/) on purpose, the way
 contracts/ does: it implements their protocols over the service's own
 database.
 """
@@ -44,6 +44,8 @@ from greentechhub_core.sqlalchemy.tables import (
     ONE_TIME_TOKENS_TABLE,
     ROLE_GRANTS_TABLE,
     SETTINGS_TABLE,
+    USER_IDENTITIES_TABLE,
+    USERS_TABLE,
     api_tokens_table,
     audit_log_table,
     login_attempts_table,
@@ -51,8 +53,11 @@ from greentechhub_core.sqlalchemy.tables import (
     one_time_tokens_table,
     role_grants_table,
     settings_table,
+    user_identities_table,
+    users_table,
 )
 from greentechhub_core.sqlalchemy.throttle import SQLAlchemyAttemptStore
+from greentechhub_core.sqlalchemy.users import SQLAlchemyUserStore
 
 __all__ = [
     "API_TOKENS_TABLE",
@@ -70,6 +75,9 @@ __all__ = [
     "SQLAlchemyNotificationStore",
     "SQLAlchemySettingsStore",
     "SQLAlchemyTokenStore",
+    "SQLAlchemyUserStore",
+    "USERS_TABLE",
+    "USER_IDENTITIES_TABLE",
     "order_by",
     "page",
     "page_sync",
@@ -82,5 +90,7 @@ __all__ = [
     "one_time_tokens_table",
     "role_grants_table",
     "settings_table",
+    "user_identities_table",
+    "users_table",
     "where",
 ]

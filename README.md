@@ -18,6 +18,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `config` | `pydantic-settings` base class (`GTHBaseSettings`) every service's `Settings` extends                                      | [docs/architecture.md](docs/architecture.md) |
 | `logging` | Structured (JSON) logging setup, request-ID-aware formatters, shaped for the homelab's Loki/Alloy pipeline                 | [docs/architecture.md](docs/architecture.md) |
 | `identity` | Framework-independent identity model — the centrepiece of this package                                                     | [docs/identity.md](docs/identity.md) |
+| `users` | User accounts: one internal key per person (`UserAccount`), external sign-ins linked to it (`LinkedIdentity`), `authenticate` for a local password and `resolve_account` for any other source (just-in-time provisioning, IdP-owned field sync), over a `UserStore` (in-memory; SQLAlchemy behind the `[sqlalchemy]` extra) | [docs/users.md](docs/users.md) |
 | `permissions` | Permission-check primitives, typed permission-catalogue helpers, and opt-in role resolution (`RoleResolver` from groups/bootstrap/`GrantStore`) | [docs/permissions.md](docs/permissions.md) |
 | `settings` | Opt-in runtime settings: `Setting` definitions, a `SettingsRegistry` with validate/coerce, user → app → env → default resolution, shared `builtins.USER_PREFERENCES` and the `landing_page_setting` and `site_banner_settings` factories, in-memory/JSON `SettingsStore`s, the `Settings` facade, and secret settings (encrypted at rest, masked on read; `FernetCipher` and `settings_cipher(config)` behind the `[crypto]` extra) | [docs/settings.md](docs/settings.md) |
 | `notifications` | A `Notification` model in `toast()`'s shape, a per-recipient `NotificationStore` (in-memory; SQLAlchemy behind the `[sqlalchemy]` extra) for the notification centre, and per-category delivery preferences (`notification_preferences`, `channels_for`) | [docs/modules.md](docs/modules.md#notifications) |
@@ -32,6 +33,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `proxy` | Pure functions parsing/validating `X-Forwarded-*` headers against a trusted-IP allowlist                                   | [docs/modules.md](docs/modules.md#proxy) |
 | `version` | Reports installed `greentechhub-*` package versions + service version, for `/health`/`/version` and deploy debugging       | [docs/architecture.md](docs/architecture.md#package-layout) |
 | `dates` | Fiscal years: `fiscal_year`, `fiscal_year_bounds`, `fiscal_year_label` ("2024–25"), any start month (July by default) | [docs/modules.md](docs/modules.md#dates) |
+| `exports` | Rows as CSV text: `csv_text(rows, bom=True)` (a UTF-8 BOM so spreadsheets read it right) and `csv_value` for Decimals and dates, shared by web downloads and CLIs | [docs/modules.md](docs/modules.md#exports) |
 | `background` | `locks.py` — `Lock`/`FileLock`, OS-advisory-lock-backed, ships today; `scheduler.py`/`tasks.py` deferred until a consumer needs ≥2 scheduled jobs | [docs/modules.md](docs/modules.md#background-tasks) |
 | `types` / `utils` | Shared value types (`FlashMessage`, `Result`/error types) and small utilities with no other natural home                   | [docs/architecture.md](docs/architecture.md) |
 | `sqlalchemy` | Optional (`[sqlalchemy]` extra): `gth_settings`/`gth_role_grants` tables on the service's `MetaData`, `SQLAlchemySettingsStore` and `SQLAlchemyGrantStore`; `page` (a `PageRequest` in, a `Page` out) and the `where`, `order_by` and `paginate` it's built from, for a service's own selects | [docs/settings.md](docs/settings.md#storage-tables-shipped-sqlalchemy-extra), [docs/query.md](docs/query.md#sqlalchemy) |
@@ -42,6 +44,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | Doc | Covers |
 |---|---|
 | [docs/identity.md](docs/identity.md) | 🪪 The framework-independent identity model (read this first) |
+| [docs/users.md](docs/users.md) | 👤 User accounts, linked sign-ins, provisioning and profile sync |
 | [docs/architecture.md](docs/architecture.md) | 🏗️ Layered architecture, package layout |
 | [docs/permissions.md](docs/permissions.md) | 🔑 Global roles vs. application permissions |
 | [docs/events.md](docs/events.md) | 📡 `publish`/`subscribe` event bus abstraction |

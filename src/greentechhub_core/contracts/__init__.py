@@ -9,6 +9,7 @@ from greentechhub_core.contracts.permissions import GrantStoreContract, Permissi
 from greentechhub_core.contracts.query import PageContract
 from greentechhub_core.contracts.settings import SettingsStoreContract
 from greentechhub_core.contracts.throttle import AttemptStoreContract
+from greentechhub_core.contracts.users import UserStoreContract
 
 __all__ = [
     "ApiTokenStoreContract",
@@ -23,4 +24,5 @@ __all__ = [
     "PermissionResolverContract",
     "SettingsStoreContract",
     "TokenStoreContract",
+    "UserStoreContract",
 ]

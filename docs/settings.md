@@ -50,7 +50,7 @@ forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a
 | `cors_allowed_origins` (`CORS_ALLOWED_ORIGINS`) | `""` | `register_core` | Comma-separated origins allowed cross-origin requests; empty allows none |
 | `trusted_proxies` (`TRUSTED_PROXIES`) | `""` | `register_core` | Comma-separated addresses of the reverse proxies whose `X-Forwarded-*` headers are believed; empty trusts none. Behind a proxy, set it, or every request looks like it came from the proxy and per-client counts (the login throttle's) become one count for everybody |
 | `role_groups` (`ROLE_GROUPS`) | `""` | `register_permissions` | Directory group → role names, `"finance=admin\|editor,staff=viewer"` or a JSON object (see below) |
-| `role_bootstrap` (`ROLE_BOOTSTRAP`) | `""` | `register_permissions` | Subject → role names in the same form, for the first admin and recovery |
+| `role_bootstrap` (`ROLE_BOOTSTRAP`) | `""` | `register_permissions` | Subject or username → role names in the same form, for the first admin and recovery (a username, since a user account's subject is generated) |
 | `environment` (`ENVIRONMENT`) | `"development"` | the service; the CORS opt-in below | `"development"` or `"production"` |
 | `lock_dir` (`LOCK_DIR`) | `""` | `lock_directory()` | Where `FileLock`s live: this, else `<tempdir>/gth-locks`. Every worker and replica on a host must share it |
 
@@ -380,6 +380,8 @@ db.override(async_sessionmaker(bind=test_connection, ...))                    # 
 | `api_tokens_table(metadata)` | `gth_api_tokens`: `id` (the primary key), `token_hash` (unique; SHA-256 of the token), `owner`, `name`, `scopes` (JSON), `created_at`, `expires_at`, `last_used_at`, indexed on `owner` (see [modules.md](modules.md#api-tokens)) |
 | `audit_log_table(metadata)` | `gth_audit_log`: `id` (the primary key), `at`, `actor`, `action`, `target_type`, `target_id`, `summary`, `details` (JSON), indexed on `at`, `actor` and (`target_type`, `target_id`) (see [modules.md](modules.md#audit-log)) |
 | `notifications_table(metadata)` | `gth_notifications`: `id` (the primary key), `recipient`, `category`, `kind`, `title`, `message`, `icon`, `action_label`, `action_url`, `created_at`, `read_at`, indexed on (`recipient`, `read_at`) (see [modules.md](modules.md#notifications)) |
+| `users_table(metadata)` | `gth_users`: `id` (the primary key), `username` (unique), `email` (unique), `email_verified`, `display_name`, `active`, `password_hash`, `auth_source`, `created_at`, `updated_at`, `last_login_at` (see [users.md](users.md)) |
+| `user_identities_table(metadata)` | `gth_user_identities`: `provider`, `external_subject` (together the primary key), `user_id` (a foreign key to `gth_users.id`, cascading; indexed), `created_at`, `last_seen_at` |
 | `SQLAlchemySettingsStore(table, ...)` | A `SettingsStore` over `gth_settings` |
 | `SQLAlchemyGrantStore(table, ...)` | A `GrantStore` over `gth_role_grants` |
 | `SQLAlchemyAttemptStore(table, ...)` | An `AttemptStore` over `gth_login_attempts`, for `LoginThrottle` |
@@ -387,8 +389,9 @@ db.override(async_sessionmaker(bind=test_connection, ...))                    # 
 | `SQLAlchemyTokenStore(table, ...)` | A `TokenStore` over `gth_one_time_tokens`, for `OneTimeTokens` |
 | `SQLAlchemyApiTokenStore(table, ...)` | An `ApiTokenStore` over `gth_api_tokens` |
 | `SQLAlchemyAuditStore(table, ...)` | An `AuditStore` over `gth_audit_log` |
+| `SQLAlchemyUserStore(users, identities, ...)` | A `UserStore` over `gth_users` and `gth_user_identities` |
 
-All seven stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
+All eight stores take `session_factory=` (a `sessionmaker`, for the `_sync` methods), `async_session_factory=` (an
 `async_sessionmaker`, for the async ones), or both. Calling a method whose factory wasn't given raises
 `RuntimeError`. Each call runs in its own transaction.
 
@@ -415,7 +418,7 @@ settings = Settings(registry, SQLAlchemySettingsStore(settings_rows, async_sessi
 
 **Alembic recipe.** The tables are ordinary `Table`s on your metadata, so migrations are the usual autogenerate:
 
-1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`api_tokens_table`/`audit_log_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
+1. Call `settings_table`/`role_grants_table`/`login_attempts_table`/`notifications_table`/`one_time_tokens_table`/`api_tokens_table`/`audit_log_table`/`users_table`/`user_identities_table` (the ones you use) in a module your `env.py` imports before it reads `target_metadata`
    (calling them again on the same metadata returns the existing table, so the app and `env.py` can both call them).
 2. `alembic revision --autogenerate -m "gth settings and role grants"` detects them.
 3. Review the revision and `alembic upgrade head`.
