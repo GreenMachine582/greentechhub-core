@@ -50,7 +50,7 @@ forget one; a `Settings` with `extra="ignore"` would otherwise drop it without a
 | `cors_allowed_origins` (`CORS_ALLOWED_ORIGINS`) | `""` | `register_core` | Comma-separated origins allowed cross-origin requests; empty allows none |
 | `trusted_proxies` (`TRUSTED_PROXIES`) | `""` | `register_core` | Comma-separated addresses of the reverse proxies whose `X-Forwarded-*` headers are believed; empty trusts none. Behind a proxy, set it, or every request looks like it came from the proxy and per-client counts (the login throttle's) become one count for everybody |
 | `role_groups` (`ROLE_GROUPS`) | `""` | `register_permissions` | Directory group → role names, `"finance=admin\|editor,staff=viewer"` or a JSON object (see below) |
-| `role_bootstrap` (`ROLE_BOOTSTRAP`) | `""` | `register_permissions` | Subject → role names in the same form, for the first admin and recovery |
+| `role_bootstrap` (`ROLE_BOOTSTRAP`) | `""` | `register_permissions` | Subject or username → role names in the same form, for the first admin and recovery (a username, since a user account's subject is generated) |
 | `environment` (`ENVIRONMENT`) | `"development"` | the service; the CORS opt-in below | `"development"` or `"production"` |
 | `lock_dir` (`LOCK_DIR`) | `""` | `lock_directory()` | Where `FileLock`s live: this, else `<tempdir>/gth-locks`. Every worker and replica on a host must share it |
 
