@@ -38,8 +38,24 @@ class Identity:
             this application at all," not per-service application
             permissions, which live in each service's own storage instead.
         claims: raw claims, for anything not modeled explicitly above.
+        display_name: a person's full/display name when the source supplies
+            one (Authentik's `name` header, a user account's profile), else
+            None — what a UI greets them with ahead of `username`.
+        email_verified: True only when the source vouches for `email`
+            (an IdP that verified it, or a user account whose address was
+            confirmed by link). An unverified address may still be shown,
+            but is never trusted for linking accounts by email.
+        provider: which kind of source resolved this identity — "local"
+            (a service's own sign-in), "dev", "authentik", or a future
+            "oidc:<name>". Lets a user-account store keep one link per
+            (provider, subject) pair, so switching or adding a sign-in
+            method never re-keys anyone.
 
-    No defaults on any field: every Identity is always fully populated by a
+    display_name/email_verified/provider were added after the first five
+    and carry defaults (None/False/"local") so every existing caller that
+    builds an Identity keeps working unchanged.
+
+    No defaults on the original five fields: every Identity is always fully populated by a
     resolve()/resolve_sync() call (never hand-assembled piecemeal by a
     caller), matching Page's precedent in query/types.py — a doc sample with
     no defaults shown, combined with confirmed usage that always supplies
@@ -62,6 +78,9 @@ class Identity:
     email: str | None
     groups: list[str]
     claims: dict[str, Any]
+    display_name: str | None = None
+    email_verified: bool = False
+    provider: str = "local"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
