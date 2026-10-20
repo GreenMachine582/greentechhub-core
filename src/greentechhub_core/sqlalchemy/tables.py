@@ -1,6 +1,6 @@
 """sqlalchemy.tables — the gth_settings, gth_role_grants, gth_login_attempts, gth_notifications,
-gth_one_time_tokens, gth_api_tokens and gth_audit_log tables, defined
-on a MetaData the service passes in so its own Alembic migrates them.
+gth_one_time_tokens, gth_api_tokens, gth_audit_log, gth_users and gth_user_identities
+tables, defined on a MetaData the service passes in so its own Alembic migrates them.
 
 Core holds no data and owns no engine: these functions only add Table
 definitions to the service's metadata. Calling one again on the same
@@ -17,6 +17,8 @@ NOTIFICATIONS_TABLE = "gth_notifications"
 ONE_TIME_TOKENS_TABLE = "gth_one_time_tokens"
 API_TOKENS_TABLE = "gth_api_tokens"
 AUDIT_LOG_TABLE = "gth_audit_log"
+USERS_TABLE = "gth_users"
+USER_IDENTITIES_TABLE = "gth_user_identities"
 
 APP_SUBJECT = ""
 """The `subject` stored on APP rows. The column is part of the primary key,
@@ -196,4 +198,67 @@ def audit_log_table(metadata: sa.MetaData) -> sa.Table:
         sa.Index("ix_gth_audit_log_at", "at"),
         sa.Index("ix_gth_audit_log_actor", "actor"),
         sa.Index("ix_gth_audit_log_target", "target_type", "target_id"),
+    )
+
+
+def users_table(metadata: sa.MetaData) -> sa.Table:
+    """gth_users: one row per user account (users.model).
+
+    id              32 hex characters — the service's key for the person;
+                    its own tables reference it (ForeignKey("gth_users.id"))
+    username        lowercased login name (unique)
+    email           lowercased, or NULL (unique when set)
+    email_verified, display_name, active
+    password_hash   bcrypt, or NULL for an IdP-only account
+    auth_source     the provider that created it ("local", "authentik", ...)
+    created_at, updated_at
+    last_login_at   or NULL
+    """
+    if USERS_TABLE in metadata.tables:
+        return metadata.tables[USERS_TABLE]
+    return sa.Table(
+        USERS_TABLE,
+        metadata,
+        sa.Column("id", sa.String(32), primary_key=True),
+        sa.Column("username", sa.String(255), nullable=False, unique=True),
+        sa.Column("email", sa.String(320), nullable=True, unique=True),
+        sa.Column("email_verified", sa.Boolean, nullable=False, default=False),
+        sa.Column("display_name", sa.String(255), nullable=True),
+        sa.Column("active", sa.Boolean, nullable=False, default=True),
+        sa.Column("password_hash", sa.String(255), nullable=True),
+        sa.Column("auth_source", sa.String(64), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("last_login_at", sa.DateTime(timezone=True), nullable=True),
+    )
+
+
+def user_identities_table(metadata: sa.MetaData) -> sa.Table:
+    """gth_user_identities: one row per external sign-in linked to an account.
+
+    provider, external_subject   the source and its immutable id for the person (primary key)
+    user_id         the gth_users.id it signs in as (indexed; deleting the
+                    account deletes its links)
+    created_at
+    last_seen_at    or NULL
+
+    Defines gth_users on the same metadata too, for the foreign key.
+    """
+    if USER_IDENTITIES_TABLE in metadata.tables:
+        return metadata.tables[USER_IDENTITIES_TABLE]
+    users_table(metadata)
+    return sa.Table(
+        USER_IDENTITIES_TABLE,
+        metadata,
+        sa.Column("provider", sa.String(64), primary_key=True),
+        sa.Column("external_subject", sa.String(255), primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.String(32),
+            sa.ForeignKey(f"{USERS_TABLE}.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("last_seen_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Index("ix_gth_user_identities_user_id", "user_id"),
     )

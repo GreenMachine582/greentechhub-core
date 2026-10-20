@@ -14,7 +14,7 @@
       @pytest.fixture
       def valid_raw_context(self): return RawAuthContext(...)
   ```
-- The SQLAlchemy stores run the same `SettingsStoreContract`, `GrantStoreContract`, `AttemptStoreContract`, `NotificationStoreContract`, `TokenStoreContract`, `ApiTokenStoreContract` and `AuditStoreContract` against a SQLite file through both a sync session and an `aiosqlite` async one; `.[dev]` installs SQLAlchemy and aiosqlite for that.
+- The SQLAlchemy stores run the same `SettingsStoreContract`, `GrantStoreContract`, `AttemptStoreContract`, `NotificationStoreContract`, `TokenStoreContract`, `ApiTokenStoreContract`, `AuditStoreContract` and `UserStoreContract` against a SQLite file through both a sync session and an `aiosqlite` async one; `.[dev]` installs SQLAlchemy and aiosqlite for that.
 - GitHub Actions: lint (ruff) + test, same pattern as the rest of the ecosystem.
 
 ## Fixtures for a service's own tests

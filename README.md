@@ -18,6 +18,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | `config` | `pydantic-settings` base class (`GTHBaseSettings`) every service's `Settings` extends                                      | [docs/architecture.md](docs/architecture.md) |
 | `logging` | Structured (JSON) logging setup, request-ID-aware formatters, shaped for the homelab's Loki/Alloy pipeline                 | [docs/architecture.md](docs/architecture.md) |
 | `identity` | Framework-independent identity model — the centrepiece of this package                                                     | [docs/identity.md](docs/identity.md) |
+| `users` | User accounts: one internal key per person (`UserAccount`), external sign-ins linked to it (`LinkedIdentity`), `authenticate` for a local password and `resolve_account` for any other source (just-in-time provisioning, IdP-owned field sync), over a `UserStore` (in-memory; SQLAlchemy behind the `[sqlalchemy]` extra) | [docs/users.md](docs/users.md) |
 | `permissions` | Permission-check primitives, typed permission-catalogue helpers, and opt-in role resolution (`RoleResolver` from groups/bootstrap/`GrantStore`) | [docs/permissions.md](docs/permissions.md) |
 | `settings` | Opt-in runtime settings: `Setting` definitions, a `SettingsRegistry` with validate/coerce, user → app → env → default resolution, shared `builtins.USER_PREFERENCES` and the `landing_page_setting` and `site_banner_settings` factories, in-memory/JSON `SettingsStore`s, the `Settings` facade, and secret settings (encrypted at rest, masked on read; `FernetCipher` and `settings_cipher(config)` behind the `[crypto]` extra) | [docs/settings.md](docs/settings.md) |
 | `notifications` | A `Notification` model in `toast()`'s shape, a per-recipient `NotificationStore` (in-memory; SQLAlchemy behind the `[sqlalchemy]` extra) for the notification centre, and per-category delivery preferences (`notification_preferences`, `channels_for`) | [docs/modules.md](docs/modules.md#notifications) |
@@ -43,6 +44,7 @@ The framework-independent foundation every GreenTechHub-ecosystem service — Fa
 | Doc | Covers |
 |---|---|
 | [docs/identity.md](docs/identity.md) | 🪪 The framework-independent identity model (read this first) |
+| [docs/users.md](docs/users.md) | 👤 User accounts, linked sign-ins, provisioning and profile sync |
 | [docs/architecture.md](docs/architecture.md) | 🏗️ Layered architecture, package layout |
 | [docs/permissions.md](docs/permissions.md) | 🔑 Global roles vs. application permissions |
 | [docs/events.md](docs/events.md) | 📡 `publish`/`subscribe` event bus abstraction |
