@@ -81,6 +81,10 @@ greentechhub-core/
 │   │   ├── model.py               # Notification (toast()'s shape), new_notification, from_toast
 │   │   ├── store.py               # NotificationStore protocol + InMemoryNotificationStore
 │   │   └── preferences.py         # notification_preferences (per-category delivery settings), channels_for
+│   ├── users/
+│   │   ├── model.py               # UserAccount, LinkedIdentity, ProvisioningPolicy, the update/sync rules
+│   │   ├── store.py               # UserStore protocol + InMemoryUserStore
+│   │   └── resolve.py             # authenticate, resolve_account, set_password over any UserStore
 │   ├── audit/
 │   │   ├── model.py               # AuditEntry, new_entry (details scrubbed of credentials)
 │   │   └── store.py               # AuditStore protocol + InMemoryAuditStore
@@ -94,15 +98,16 @@ greentechhub-core/
 │   │   ├── tasks.py               # planned — deferred until a consumer needs ≥2 scheduled jobs
 │   │   └── locks.py               # Lock protocol + FileLock (OS-advisory-lock-backed), held/held_lock, lock_name
 │   ├── sqlalchemy/                # optional `[sqlalchemy]` extra
-│   │   ├── tables.py              # settings/role_grants/login_attempts/notifications/one_time_tokens/api_tokens/audit_log tables on the service's MetaData
+│   │   ├── tables.py              # settings/role_grants/login_attempts/notifications/one_time_tokens/api_tokens/audit_log/users/user_identities tables on the service's MetaData
 │   │   ├── settings.py            # SQLAlchemySettingsStore
 │   │   ├── grants.py              # SQLAlchemyGrantStore
 │   │   ├── throttle.py            # SQLAlchemyAttemptStore
 │   │   ├── notifications.py       # SQLAlchemyNotificationStore
 │   │   ├── one_time.py            # SQLAlchemyTokenStore
 │   │   ├── api_tokens.py          # SQLAlchemyApiTokenStore
-│   │   └── audit.py               # SQLAlchemyAuditStore
-│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings, throttle, notifications, one_time, api_tokens, audit
+│   │   ├── audit.py               # SQLAlchemyAuditStore
+│   │   └── users.py               # SQLAlchemyUserStore
+│   ├── contracts/                 # pytest contract bases (the `contracts` extra): identity, feature flags, health, query, permissions, settings, throttle, notifications, one_time, api_tokens, audit, users
 │   └── types/
 │       ├── common.py              # FlashMessage, Result, etc.
 │       └── errors.py              # ApplicationError and its HTTP-shaped subclasses (docs/modules.md#errors)
