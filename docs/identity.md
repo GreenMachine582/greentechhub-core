@@ -13,6 +13,9 @@ class Identity:
     email: str | None
     groups: list[str]           # from Authentik, a dev fixture, or a service's own local login
     claims: dict[str, Any]      # raw claims, for anything not modeled explicitly
+    display_name: str | None = None  # full name, when the source has one
+    email_verified: bool = False     # the source vouches for `email`
+    provider: str = "local"          # "local", "dev", "authentik", later "oidc:<name>"
 
 # greentechhub_core/identity/provider.py
 class IdentityProvider(Protocol):
@@ -27,7 +30,7 @@ Two implementations ship in `greentechhub-core` itself (both framework-independe
 - **`DevelopmentIdentityProvider`** — validates a locally-issued JWT or a dummy dev-mode identity. Deliberately minimal: this is the one genuinely **transient** piece of the whole package. Don't over-build it — `DEV_AUTH=true` → dummy login → done.
 - **`AuthentikIdentityProvider`** — parses Authentik's real forward-auth header set (`X-authentik-username`, `X-authentik-groups`, `X-authentik-email`, `X-authentik-uid`, `X-authentik-name`, `X-authentik-jwt`) into an `Identity`, once a reverse proxy fronts a service with an Authentik outpost. Ships the header path only; validating `X-authentik-jwt` against the issuer's JWKS needs a live instance and is planned for v0.5.1.
 
-  Constructor: `header_prefix` (default `"X-authentik-"`), `groups_separator` (default `"|"`, Authentik's own default), `require_headers` (default `("username",)`). Missing any `require_headers` entry — or `username` specifically, unconditionally, since `Identity.username` has no sensible empty default — resolves to `None` rather than raising. `subject` is the `uid` header, falling back to `username` when a deployment omits it. `claims` captures every header under `header_prefix`, prefix-stripped, including the ones already mapped onto `subject`/`username`/`email`/`groups` — a lossless raw view alongside the modeled fields, so `name`/`jwt`/any future optional header aren't silently dropped just because this class doesn't parse them by name.
+  Constructor: `header_prefix` (default `"X-authentik-"`), `groups_separator` (default `"|"`, Authentik's own default), `require_headers` (default `("username",)`), `provider` (default `"authentik"`, the value stamped on `Identity.provider`). `display_name` comes from the `name` header, and `email_verified` is true whenever an `email` header arrived (the outpost forwards Authentik's own user record, which Authentik and any Google/GitHub/Apple source it brokers vouch for). Missing any `require_headers` entry — or `username` specifically, unconditionally, since `Identity.username` has no sensible empty default — resolves to `None` rather than raising. `subject` is the `uid` header, falling back to `username` when a deployment omits it. `claims` captures every header under `header_prefix`, prefix-stripped, including the ones already mapped onto `subject`/`username`/`email`/`groups` — a lossless raw view alongside the modeled fields, so `name`/`jwt`/any future optional header aren't silently dropped just because this class doesn't parse them by name.
 
   **Security note:** these headers are only trustworthy once the request is confirmed to have come through the trusted reverse proxy — an untrusted direct connection can set any `X-authentik-*` header itself. This class never sees the connection's remote address, so it cannot gate on that itself; the *adapter* must call `proxy.trusted_proxy.is_trusted_proxy(remote_addr, settings.trusted_proxies)` and treat an untrusted `remote_addr` as "no identity" before ever constructing a `RawAuthContext` from these headers.
 

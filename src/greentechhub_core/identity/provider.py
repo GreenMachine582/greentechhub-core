@@ -36,6 +36,7 @@ _DEV_GROUPS = ("dev",)
 _DEFAULT_HEADER_PREFIX = "X-authentik-"
 _DEFAULT_GROUPS_SEPARATOR = "|"
 _DEFAULT_REQUIRE_HEADERS: tuple[str, ...] = ("username",)
+_DEFAULT_PROVIDER = "authentik"
 
 
 class IdentityProvider(Protocol):
@@ -88,7 +89,8 @@ class DevelopmentIdentityProvider:
         """Issue a JWT encoding `identity`, signed with this provider's secret.
 
         Claims map onto Identity's fields directly (`sub`/`username`/`email`/
-        `groups`), with `identity.claims` carried under its own nested
+        `groups`, plus `display_name`/`email_verified`/`provider`), with
+        `identity.claims` carried under its own nested
         `claims` key rather than flattened into the top-level payload — that
         keeps arbitrary caller-supplied claim keys from ever colliding with
         this provider's own modeled claim names (`sub`, `groups`, `exp`,
@@ -111,6 +113,9 @@ class DevelopmentIdentityProvider:
             "email": identity.email,
             "groups": identity.groups,
             "claims": identity.claims,
+            "display_name": identity.display_name,
+            "email_verified": identity.email_verified,
+            "provider": identity.provider,
             "iat": now,
             "exp": now + expires_in,
         }
@@ -178,6 +183,7 @@ class DevelopmentIdentityProvider:
             email=_DEV_EMAIL,
             groups=list(_DEV_GROUPS),
             claims={"is_dev": True},
+            provider="dev",
         )
 
     def _verify_token(self, token: str) -> Identity | None:
@@ -210,6 +216,9 @@ class DevelopmentIdentityProvider:
                 email=payload.get("email"),
                 groups=payload.get("groups", []),
                 claims=payload.get("claims", {}),
+                display_name=payload.get("display_name"),
+                email_verified=payload.get("email_verified", False),
+                provider=payload.get("provider", "local"),
             )
         except (jwt.InvalidTokenError, KeyError, TypeError):
             return None
@@ -256,7 +265,9 @@ class AuthentikIdentityProvider:
         header_prefix: str = _DEFAULT_HEADER_PREFIX,
         groups_separator: str = _DEFAULT_GROUPS_SEPARATOR,
         require_headers: Sequence[str] = _DEFAULT_REQUIRE_HEADERS,
+        provider: str = _DEFAULT_PROVIDER,
     ) -> None:
+        self._provider = provider
         self._header_prefix = header_prefix.lower()
         self._groups_separator = groups_separator
         self._require_headers = tuple(name.lower() for name in require_headers)
@@ -275,7 +286,13 @@ class AuthentikIdentityProvider:
         wasn't sent — some Authentik configurations omit it. `groups` splits
         the `groups` header on `groups_separator` (Authentik's own default
         is "|"), stripping whitespace and dropping empty entries; absent
-        entirely defaults to []. `claims` captures *every* header under
+        entirely defaults to []. `display_name` is the `name` header.
+        `email_verified` is True whenever an `email` header arrived: the
+        outpost only forwards an address from Authentik's own user record,
+        which Authentik (and any social source it brokers) vouches for.
+        `provider` is this instance's `provider` argument (default
+        "authentik"), so two Authentik instances can stay apart.
+        `claims` captures *every* header under
         `header_prefix`, prefix-stripped — including `username`/`uid`/
         `groups`/`email` again alongside the modeled fields, plus anything
         this class doesn't parse by name (`name`, `jwt`, or a future
@@ -307,12 +324,16 @@ class AuthentikIdentityProvider:
             if key.startswith(self._header_prefix)
         }
 
+        email = get("email")
         return Identity(
             subject=get("uid") or username,
             username=username,
-            email=get("email"),
+            email=email,
             groups=groups,
             claims=claims,
+            display_name=get("name") or None,
+            email_verified=bool(email),
+            provider=self._provider,
         )
 
     async def resolve(self, raw: RawAuthContext) -> Identity | None:
