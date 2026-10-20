@@ -5,6 +5,16 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.16.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.15.0...v0.16.0) (2026-10-20)
+
+
+### Features
+
+* **exports:** CSV text ([#82](https://github.com/GreenMachine582/greentechhub-core/issues/82)) ([554ce24](https://github.com/GreenMachine582/greentechhub-core/commit/554ce248714c121d63c475854dcdffeddb7afadd))
+* **identity:** display_name, email_verified, provider ([#83](https://github.com/GreenMachine582/greentechhub-core/issues/83)) ([ea33d55](https://github.com/GreenMachine582/greentechhub-core/commit/ea33d5524722d45c47bb60712da110ad42451c47))
+* **permissions:** ROLE_BOOTSTRAP by username ([#85](https://github.com/GreenMachine582/greentechhub-core/issues/85)) ([bec328d](https://github.com/GreenMachine582/greentechhub-core/commit/bec328dbfd1e27e87d1fa7c4223c763b03d8e933))
+* **users:** user accounts and identity links ([#84](https://github.com/GreenMachine582/greentechhub-core/issues/84)) ([e6a7200](https://github.com/GreenMachine582/greentechhub-core/commit/e6a7200faff3e567f112b80820a6121c05dd3df8))
+
 ## [0.15.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.14.0...v0.15.0) (2026-10-15)
 
 
