@@ -22,8 +22,6 @@ PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped, and so has core's share of 
 ### Local single-user apps
 For a local tool with one user and no sign-in that scans folders and runs long jobs. Each pairs with a
 greentechhub-fastapi view and a greentechhub-ui template.
-- [ ] Background jobs: a `JobRunner` with progress, cooperative pause/resume/cancel and a result, over a `JobStore`
-  protocol (`InMemoryJobStore` first), announcing `JobFinished` on the `EventBus`
 - [ ] `SQLAlchemyJobStore`, so job history and results survive a restart
 - [ ] A safe folder listing for a folder picker: folders only, drive roots on Windows, hidden folders, permission
   errors reported rather than raised, and optional roots it can't escape
