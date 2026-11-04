@@ -25,8 +25,6 @@ greentechhub-fastapi view and a greentechhub-ui template.
 - [ ] Background jobs: a `JobRunner` with progress, cooperative pause/resume/cancel and a result, over a `JobStore`
   protocol (`InMemoryJobStore` first), announcing `JobFinished` on the `EventBus`
 - [ ] `SQLAlchemyJobStore`, so job history and results survive a restart
-- [ ] A safe folder listing for a folder picker: folders only, drive roots on Windows, hidden folders, permission
-  errors reported rather than raised, and optional roots it can't escape
 
 ### Parked — until a consumer asks
 - A currency setting: greentechhub-ui's `money` filter takes its symbol per call (default `$`); a shared

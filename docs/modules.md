@@ -339,6 +339,35 @@ Path("transactions.csv").write_text(csv_text(rows), encoding="utf-8")
 - `csv_value(value)` formats a cell: `""` for `None`, a `Decimal` at full precision with no trailing zeros and never
   in E-notation (`12.50` → `"12.5"`), a date or datetime in ISO format, anything else `str()`.
 
+## Folders
+
+`files.list_folders(path, *, roots=None, show_hidden=False, max_entries=1000)` lists one folder's subfolders for
+a folder picker. It's what greentechhub-fastapi's `FolderPickerViews` serves to greentechhub-ui's
+`gth_folder_picker`.
+
+```python
+from greentechhub_core.files import list_folders
+
+listing = list_folders("D:/Music")          # FolderListing
+listing.entries        # (Folder(name, path, hidden), ...) — folders only, sorted case-insensitively
+listing.parent         # "up"; None at a root (back to the roots)
+listing.breadcrumbs    # (Crumb(label, path), ...) from the root down
+listing.hidden_count   # hidden folders left out
+listing.error          # None, or why there are no entries
+
+list_folders(None)                          # the roots: drive letters on Windows, "/"'s folders elsewhere
+list_folders(path, roots=["D:/Music"])      # browsing limited to D:/Music and below
+```
+
+- Hidden means a leading `.` or, on Windows, the hidden or system attribute. `show_hidden=True` lists them with
+  `hidden=True`.
+- A filesystem problem is never raised: `error` is `"permission_denied"`, `"not_found"`, `"not_a_folder"`,
+  `"unavailable"` (a drive with no disc, a disconnected share), `"invalid"` (not an absolute path) or
+  `"outside_roots"`.
+- Paths are resolved first, so with `roots` neither `..` nor a symlink or junction can leave them. Without
+  `roots` everything the process can read is browsable: fine for a local single-user app, not for a shared server.
+- It's synchronous: from async code, call it through `asyncio.to_thread`.
+
 ## Background tasks
 
 `background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
