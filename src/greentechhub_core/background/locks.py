@@ -4,8 +4,9 @@ scheduler-less service still needs "don't let two replicas run the same
 periodic job at once," and a lock has no framework or scheduler dependency
 of its own.
 
-background/scheduler.py and background/tasks.py are deliberately not built
-yet: zero consumers ask for a scheduler today (BottleBot has its own
+background/jobs.py (JobRunner) runs one-off jobs a person starts, with
+progress, pause and cancel. background/scheduler.py is deliberately not
+built yet: zero consumers ask for a scheduler today (BottleBot has its own
 scraper cadence, PyFinBot is greenfield, Market Watch doesn't exist), and
 APScheduler's own 4.x line has been pre-release with a shifting API for an
 extended period — wrapping either version now risks a rewrite before this
