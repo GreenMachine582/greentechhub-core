@@ -393,7 +393,46 @@ with held_lock(settings, lock_name("email-sync", user.subject), ttl=10 * 60) as 
   `lock_name(prefix, *parts)` builds one from user data: the prefix as given, then a 16-hex hash of the parts.
 - `held(lock, name, ttl)` is the same context manager over any `Lock`, for a backend of your own.
 
-`background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
+### Jobs
+
+`background/jobs.py` runs one-off jobs a person starts (scan a folder, build a library, apply a plan) in this
+process, with progress, cooperative pause/resume/cancel and a result. A coroutine function runs as an asyncio task;
+a plain function runs in a worker thread (`asyncio.to_thread`), so blocking file I/O doesn't stall the server.
+
+```python
+from greentechhub_core.background import InMemoryJobStore, JobContext, JobRunner
+
+runner = JobRunner(InMemoryJobStore())
+
+def scan(ctx: JobContext) -> dict:          # a plain function: runs in a thread
+    files = list(folder.rglob("*.mp3"))
+    for n, path in enumerate(files, 1):
+        ctx.checkpoint_sync()               # blocks while paused; raises JobCancelled
+        index(path)
+        ctx.progress(n, len(files), message=path.name)
+    return {"files": len(files), "badges": [[f"{len(files)} files", "good"]]}
+
+job = await runner.start("scan", scan, label="Scan D:\Music", owner=user.subject, unique=True)
+runner.pause(job.id); runner.resume(job.id); runner.cancel(job.id)
+job = await runner.get(job.id)              # live progress while it runs
+```
+
+- A `Job` carries `state` (`queued`, `running`, `paused`, `succeeded`, `failed`, `cancelled`), `done`/`total`
+  (`total` None while unknown), `message`, `result` (the function's returned mapping), `error`, `owner` and its
+  timestamps; `active` and `fraction` derive from them.
+- Pause and cancel are cooperative: they take effect at the job's next `checkpoint()` (async) or
+  `checkpoint_sync()` (thread), and a coroutine job is also cancelled at its next await. `pause` marks the job
+  paused straight away.
+- `unique=True` refuses a second active job of the same kind (`JobAlreadyRunning`); give the runner a
+  `lock` (e.g. a `FileLock`) to make that hold across processes.
+- When a job ends, the runner publishes `JobFinished(job=...)` on the `EventBus` (`event_bus=`, default
+  `default_event_bus`): subscribe to notify someone or record it.
+- `JobStore` keeps the records (`save`, `get`, `jobs(kind=, owner=, active=, limit=)`, `prune(before)`, each with a
+  `_sync` twin). `InMemoryJobStore` ships; `JobStoreContract` checks any implementation. Progress between state
+  changes is served from the runner's live view, so the store is written only when the state changes.
+- Jobs live in the process: a restart loses the running ones. `shutdown()` cancels them on the way out.
+
+`background/scheduler.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
 
 ## Testing
 

@@ -3,6 +3,7 @@ from greentechhub_core.contracts.audit import AuditStoreContract
 from greentechhub_core.contracts.feature_flags import FeatureFlagProviderContract
 from greentechhub_core.contracts.health import HealthCheckContract
 from greentechhub_core.contracts.identity import IdentityProviderContract
+from greentechhub_core.contracts.jobs import JobStoreContract
 from greentechhub_core.contracts.notifications import NotificationStoreContract
 from greentechhub_core.contracts.one_time import TokenStoreContract
 from greentechhub_core.contracts.permissions import GrantStoreContract, PermissionResolverContract
@@ -19,6 +20,7 @@ __all__ = [
     "GrantStoreContract",
     "HealthCheckContract",
     "IdentityProviderContract",
+    "JobStoreContract",
     "NotificationStoreContract",
     "PageContract",
     "PermissionResolverContract",
