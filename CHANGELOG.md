@@ -5,6 +5,15 @@ version). From v0.6.0 on, entries are written by [release-please](https://github
 from conventional commits; the same notes are published as
 [GitHub Releases](https://github.com/GreenMachine582/greentechhub-core/releases).
 
+## [0.17.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.16.0...v0.17.0) (2026-11-05)
+
+
+### Features
+
+* **background:** job runner with progress, pause and cancel ([#90](https://github.com/GreenMachine582/greentechhub-core/issues/90)) ([d9b8bdb](https://github.com/GreenMachine582/greentechhub-core/commit/d9b8bdb1f6057cae6c04c87fe937f5454b02c011))
+* **email:** progress callback for ImapReader.fetch ([#88](https://github.com/GreenMachine582/greentechhub-core/issues/88)) ([9fff465](https://github.com/GreenMachine582/greentechhub-core/commit/9fff4652c852c30a2b0520ece207d14c1762d1c1))
+* **files:** safe folder listing ([#91](https://github.com/GreenMachine582/greentechhub-core/issues/91)) ([ee412fc](https://github.com/GreenMachine582/greentechhub-core/commit/ee412fcc1a7fcf665fb538e8b3311c0776f3b060))
+
 ## [0.16.0](https://github.com/GreenMachine582/greentechhub-core/compare/v0.15.0...v0.16.0) (2026-10-20)
 
 
