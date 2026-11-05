@@ -19,6 +19,11 @@ PyFinBot ready (M6) → v1.0. M1, M2 and M5 shipped, and so has core's share of 
 - [ ] The full OTel `TracerProvider`/`MeterProvider`/exporter setup, once there's a collector to send to
   ([docs/modules.md](docs/modules.md#observability)). `get_resource_attributes` shipped ahead of it
 
+### Local single-user apps
+For a local tool with one user and no sign-in that scans folders and runs long jobs. Each pairs with a
+greentechhub-fastapi view and a greentechhub-ui template.
+- [ ] `SQLAlchemyJobStore`, so job history and results survive a restart
+
 ### Parked — until a consumer asks
 - A currency setting: greentechhub-ui's `money` filter takes its symbol per call (default `$`); a shared
   `locale.currency` would let a user's or app's setting drive it

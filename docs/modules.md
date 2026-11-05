@@ -245,7 +245,8 @@ await asyncio.to_thread(reader.mark_seen, handled_uids)               # only aft
   `ImapReader(config, connect=imaplib.IMAP4_SSL)` opens one connection per call and always logs out.
 - `fetch(criteria)` returns `(uid, message)` pairs and doesn't mark anything seen, so a run that fails part-way can
   be run again. A message deleted between the search and its fetch is left out. `mark_seen(uids)` flags them
-  afterwards.
+  afterwards. `fetch(criteria, progress=report)` calls `report(done, total)` with `(0, total)` after the search
+  and then once per message, from the worker thread, e.g. to drive a progress bar.
 - `message_text(message)` is the first text/plain part, else the HTML part as plain text (`html_text`, without
   script or style). `received_at(message)` reads the Date header.
 - `imap_settings(scope=USER, group="Email", prefix="email.")` is the mailbox as five settings: `address` (the
@@ -338,6 +339,35 @@ Path("transactions.csv").write_text(csv_text(rows), encoding="utf-8")
 - `csv_value(value)` formats a cell: `""` for `None`, a `Decimal` at full precision with no trailing zeros and never
   in E-notation (`12.50` → `"12.5"`), a date or datetime in ISO format, anything else `str()`.
 
+## Folders
+
+`files.list_folders(path, *, roots=None, show_hidden=False, max_entries=1000)` lists one folder's subfolders for
+a folder picker. It's what greentechhub-fastapi's `FolderPickerViews` serves to greentechhub-ui's
+`gth_folder_picker`.
+
+```python
+from greentechhub_core.files import list_folders
+
+listing = list_folders("D:/Music")          # FolderListing
+listing.entries        # (Folder(name, path, hidden), ...) — folders only, sorted case-insensitively
+listing.parent         # "up"; None at a root (back to the roots)
+listing.breadcrumbs    # (Crumb(label, path), ...) from the root down
+listing.hidden_count   # hidden folders left out
+listing.error          # None, or why there are no entries
+
+list_folders(None)                          # the roots: drive letters on Windows, "/"'s folders elsewhere
+list_folders(path, roots=["D:/Music"])      # browsing limited to D:/Music and below
+```
+
+- Hidden means a leading `.` or, on Windows, the hidden or system attribute. `show_hidden=True` lists them with
+  `hidden=True`.
+- A filesystem problem is never raised: `error` is `"permission_denied"`, `"not_found"`, `"not_a_folder"`,
+  `"unavailable"` (a drive with no disc, a disconnected share), `"invalid"` (not an absolute path) or
+  `"outside_roots"`.
+- Paths are resolved first, so with `roots` neither `..` nor a symlink or junction can leave them. Without
+  `roots` everything the process can read is browsable: fine for a local single-user app, not for a shared server.
+- It's synchronous: from async code, call it through `asyncio.to_thread`.
+
 ## Background tasks
 
 `background/locks.py` ships today — `Lock` (protocol) + `FileLock`, a single-host lock backed by a real OS-level advisory file lock (`fcntl.flock`/`msvcrt.locking`), so a scheduler-less service can still stop two replicas from running the same periodic job at once. No APScheduler dependency at all for this piece.
@@ -363,7 +393,46 @@ with held_lock(settings, lock_name("email-sync", user.subject), ttl=10 * 60) as 
   `lock_name(prefix, *parts)` builds one from user data: the prefix as given, then a 16-hex hash of the parts.
 - `held(lock, name, ttl)` is the same context manager over any `Lock`, for a backend of your own.
 
-`background/scheduler.py`/`tasks.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
+### Jobs
+
+`background/jobs.py` runs one-off jobs a person starts (scan a folder, build a library, apply a plan) in this
+process, with progress, cooperative pause/resume/cancel and a result. A coroutine function runs as an asyncio task;
+a plain function runs in a worker thread (`asyncio.to_thread`), so blocking file I/O doesn't stall the server.
+
+```python
+from greentechhub_core.background import InMemoryJobStore, JobContext, JobRunner
+
+runner = JobRunner(InMemoryJobStore())
+
+def scan(ctx: JobContext) -> dict:          # a plain function: runs in a thread
+    files = list(folder.rglob("*.mp3"))
+    for n, path in enumerate(files, 1):
+        ctx.checkpoint_sync()               # blocks while paused; raises JobCancelled
+        index(path)
+        ctx.progress(n, len(files), message=path.name)
+    return {"files": len(files), "badges": [[f"{len(files)} files", "good"]]}
+
+job = await runner.start("scan", scan, label="Scan D:\Music", owner=user.subject, unique=True)
+runner.pause(job.id); runner.resume(job.id); runner.cancel(job.id)
+job = await runner.get(job.id)              # live progress while it runs
+```
+
+- A `Job` carries `state` (`queued`, `running`, `paused`, `succeeded`, `failed`, `cancelled`), `done`/`total`
+  (`total` None while unknown), `message`, `result` (the function's returned mapping), `error`, `owner` and its
+  timestamps; `active` and `fraction` derive from them.
+- Pause and cancel are cooperative: they take effect at the job's next `checkpoint()` (async) or
+  `checkpoint_sync()` (thread), and a coroutine job is also cancelled at its next await. `pause` marks the job
+  paused straight away.
+- `unique=True` refuses a second active job of the same kind (`JobAlreadyRunning`); give the runner a
+  `lock` (e.g. a `FileLock`) to make that hold across processes.
+- When a job ends, the runner publishes `JobFinished(job=...)` on the `EventBus` (`event_bus=`, default
+  `default_event_bus`): subscribe to notify someone or record it.
+- `JobStore` keeps the records (`save`, `get`, `jobs(kind=, owner=, active=, limit=)`, `prune(before)`, each with a
+  `_sync` twin). `InMemoryJobStore` ships; `JobStoreContract` checks any implementation. Progress between state
+  changes is served from the runner's live view, so the store is written only when the state changes.
+- Jobs live in the process: a restart loses the running ones. `shutdown()` cancels them on the way out.
+
+`background/scheduler.py` (an APScheduler wrapper with GreenTechHub conventions — structured logging per job run) are deliberately not built yet: zero consumers ask for a scheduler today, and APScheduler's own 4.x line has had a shifting pre-release API for an extended period, so wrapping either version now risks a rewrite before there's a real consumer to validate it against. Lands once a consumer needs ≥2 scheduled jobs, not on a fixed version. A distributed (multi-host) Redis-backed `Lock` is deferred the same way `events`'s Redis backend is — once Redis is deployed for some other reason.
 
 ## Testing
 

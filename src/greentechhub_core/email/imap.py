@@ -62,21 +62,32 @@ class ImapReader:
             raise
         return imap
 
-    def fetch(self, criteria: str) -> list[tuple[bytes, Message]]:
+    def fetch(
+        self, criteria: str, *, progress: Callable[[int, int], None] | None = None
+    ) -> list[tuple[bytes, Message]]:
         """The messages matching IMAP search `criteria` (e.g.
         '(UNSEEN FROM "a@b.example")') as (uid, message) pairs. Doesn't mark
         them seen. A message deleted since the search is left out.
-        Synchronous: run it in a worker thread from async code."""
+        Synchronous: run it in a worker thread from async code.
+
+        `progress(done, total)` is called with (0, total) after the search,
+        then after each message is fetched (a deleted one counts too), from
+        this thread."""
         imap = self._open()
         try:
             _, data = imap.search(None, criteria)
+            uids = data[0].split()
+            if progress:
+                progress(0, len(uids))
             messages = []
-            for uid in data[0].split():
+            for done, uid in enumerate(uids, 1):
                 _, message_data = imap.fetch(uid, "(RFC822)")
                 # (envelope, raw message); anything else (e.g. [None] for a
                 # message deleted since the search) has nothing to parse.
                 if message_data and isinstance(message_data[0], tuple):
                     messages.append((uid, email.message_from_bytes(message_data[0][1])))
+                if progress:
+                    progress(done, len(uids))
             return messages
         finally:
             imap.logout()
