@@ -89,6 +89,11 @@ consumer (each one has a `scripts/use-local-gth.sh` wrapper around this repo's `
 | Third-party deps | `--no-deps` keeps pip from pulling the pinned release back in, so a dependency a sibling adds needs a plain `pip install` |
 | Enable / `--undo` | Each checks the result (editable at the sibling's path, or back on the release) and fails loudly otherwise |
 
+Each package's checkout is the first that exists of: the path in the worktree's gitignored `.repo-kit.local.toml`
+(`[links]`, written by `rk wt start --link`); the `GTH_<PKG>_PATH` environment variable (`GTH_CORE_PATH`); `GTH_ROOT/<package>`;
+and the sibling of the **main** checkout (found with `git rev-parse --git-common-dir`, so a worktree looks next to
+the main checkout, not next to itself).
+
 The dependencies come from what the consumer declares (`pyproject.toml`'s dependencies and optional-dependencies,
 or `requirements*.txt`). The order is core → fastapi → ui.
 
