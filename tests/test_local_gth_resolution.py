@@ -20,7 +20,7 @@ def local_gth():
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
-    for name in ("GTH_ROOT", "GTH_CORE_PATH", "GTH_GREENTECHHUB_CORE_PATH"):
+    for name in ("GTH_ROOT", "GTH_CORE_PATH", "GTH_GREENTECHHUB_CORE_PATH", "GTH_FASTAPI_PATH"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -70,14 +70,23 @@ def test_a_gth_root_without_the_package_falls_through(local_gth, project, tmp_pa
     assert local_gth.resolve(project, CORE) == project.parent / CORE
 
 
-@pytest.mark.parametrize("name", ["GTH_CORE_PATH", "GTH_GREENTECHHUB_CORE_PATH"])
-def test_the_package_env_var_beats_gth_root(local_gth, project, tmp_path, monkeypatch, name):
+def test_the_package_env_var_beats_gth_root(local_gth, project, tmp_path, monkeypatch):
     root = make_dir(tmp_path / "root")
     make_dir(root / CORE)
     chosen = make_dir(tmp_path / "chosen")
     monkeypatch.setenv("GTH_ROOT", str(root))
-    monkeypatch.setenv(name, str(chosen))
+    monkeypatch.setenv("GTH_CORE_PATH", str(chosen))
     assert local_gth.resolve(project, CORE) == chosen
+
+
+def test_the_long_env_var_form_is_not_read(local_gth, project, tmp_path, monkeypatch):
+    monkeypatch.setenv("GTH_GREENTECHHUB_CORE_PATH", str(make_dir(tmp_path / "long-form")))
+    assert local_gth.resolve(project, CORE) == project.parent / CORE
+
+
+def test_env_name_drops_the_prefix(local_gth):
+    assert local_gth.env_name("greentechhub-core") == "GTH_CORE_PATH"
+    assert local_gth.env_name("greentechhub-fastapi") == "GTH_FASTAPI_PATH"
 
 
 def test_the_link_file_beats_the_env_var(local_gth, project, tmp_path, monkeypatch):

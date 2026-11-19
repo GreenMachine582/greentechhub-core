@@ -90,7 +90,7 @@ consumer (each one has a `scripts/use-local-gth.sh` wrapper around this repo's `
 | Enable / `--undo` | Each checks the result (editable at the sibling's path, or back on the release) and fails loudly otherwise |
 
 Each package's checkout is the first that exists of: the path in the worktree's gitignored `.repo-kit.local.toml`
-(`[links]`, written by `rk wt start --link`); the `GTH_<PKG>_PATH` environment variable (`GTH_CORE_PATH`); `GTH_ROOT/<package>`;
+(`[links]`, written by `rk wt start --link`); the `GTH_<PKG>_PATH` environment variable, where `PKG` is the package name without `greentechhub-`, uppercased (`GTH_CORE_PATH`, `GTH_FASTAPI_PATH`; the long `GTH_GREENTECHHUB_CORE_PATH` form isn't read); `GTH_ROOT/<package>`;
 and the sibling of the **main** checkout (found with `git rev-parse --git-common-dir`, so a worktree looks next to
 the main checkout, not next to itself).
 
