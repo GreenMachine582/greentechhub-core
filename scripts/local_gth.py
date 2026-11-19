@@ -20,7 +20,7 @@ the first of these that exists:
   1. the path in the project's gitignored .repo-kit.local.toml, under
      [links] (written by `rk wt start --link`);
   2. the GTH_<PKG>_PATH environment variable (GTH_CORE_PATH for
-     greentechhub-core; GTH_GREENTECHHUB_CORE_PATH also works);
+     greentechhub-core: the name without the greentechhub- prefix, uppercased);
   3. GTH_ROOT/<package>;
   4. the sibling of the *main* checkout, found with
      `git rev-parse --git-common-dir`, so a worktree finds the siblings next
@@ -145,10 +145,10 @@ def explicit_links(project: Path) -> dict[str, Path]:
     return {name.lower(): project / value for name, value in links.items()}
 
 
-def env_names(package: str) -> list[str]:
-    """greentechhub-core → GTH_CORE_PATH, then GTH_GREENTECHHUB_CORE_PATH."""
+def env_name(package: str) -> str:
+    """greentechhub-core → GTH_CORE_PATH (the long GTH_GREENTECHHUB_CORE_PATH isn't read)."""
     short = package.removeprefix("greentechhub-")
-    return [f"GTH_{n.upper().replace('-', '_')}_PATH" for n in (short, package)]
+    return f"GTH_{short.upper().replace('-', '_')}_PATH"
 
 
 def main_checkout(project: Path) -> Path:
@@ -169,9 +169,9 @@ def candidates(project: Path, package: str) -> list[tuple[str, Path]]:
     link = explicit_links(project).get(package)
     if link is not None:
         found.append((LOCAL_CONFIG_NAME, link))
-    for name in env_names(package):
-        if os.environ.get(name):
-            found.append((name, Path(os.environ[name]).expanduser()))
+    name = env_name(package)
+    if os.environ.get(name):
+        found.append((name, Path(os.environ[name]).expanduser()))
     if os.environ.get("GTH_ROOT"):
         found.append(("GTH_ROOT", Path(os.environ["GTH_ROOT"]).expanduser() / package))
     found.append((SIBLING, main_checkout(project).parent / package))
