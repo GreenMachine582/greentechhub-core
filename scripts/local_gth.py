@@ -14,8 +14,19 @@ git state are never touched, so CI and production keep installing the pins.
 
 The greentechhub-* dependencies are the ones the project declares
 (pyproject.toml's dependencies and optional-dependencies, or
-requirements*.txt), linked in dependency order. A dependency without a
-checkout next to the project is skipped with a warning. Siblings are
+requirements*.txt), linked in dependency order. Each one's local checkout is
+the first of these that exists:
+
+  1. the path in the project's gitignored .repo-kit.local.toml, under
+     [links] (written by `rk wt start --link`);
+  2. the GTH_<PKG>_PATH environment variable (GTH_CORE_PATH for
+     greentechhub-core; GTH_GREENTECHHUB_CORE_PATH also works);
+  3. GTH_ROOT/<package>;
+  4. the sibling of the *main* checkout, found with
+     `git rev-parse --git-common-dir`, so a worktree finds the siblings next
+     to the main checkout and not next to the worktree.
+
+A dependency with no checkout is skipped with a warning. Siblings are
 installed with --no-deps, so pip doesn't pull the pinned release back in; a
 new third-party dependency in a sibling needs a plain `pip install`.
 """
@@ -121,6 +132,62 @@ def released_revision(info: dict | None) -> str | None:
     return direct.get("vcs_info", {}).get("requested_revision")
 
 
+LOCAL_CONFIG_NAME = ".repo-kit.local.toml"
+SIBLING = "the sibling of the main checkout"
+
+
+def explicit_links(project: Path) -> dict[str, Path]:
+    """The [links] of `project`'s .repo-kit.local.toml: package name → path."""
+    path = project / LOCAL_CONFIG_NAME
+    if not path.is_file():
+        return {}
+    links = tomllib.loads(path.read_text(encoding="utf-8")).get("links", {})
+    return {name.lower(): project / value for name, value in links.items()}
+
+
+def env_names(package: str) -> list[str]:
+    """greentechhub-core → GTH_CORE_PATH, then GTH_GREENTECHHUB_CORE_PATH."""
+    short = package.removeprefix("greentechhub-")
+    return [f"GTH_{n.upper().replace('-', '_')}_PATH" for n in (short, package)]
+
+
+def main_checkout(project: Path) -> Path:
+    """The main checkout `project` belongs to (itself, unless it is a linked worktree)."""
+    result = subprocess.run(
+        ["git", "-C", str(project), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        capture_output=True, text=True,
+    )
+    common = Path(result.stdout.strip()) if result.returncode == 0 else None
+    if common is None or common.name != ".git":
+        return project  # not a git checkout, or a bare / unusual layout
+    return common.parent
+
+
+def candidates(project: Path, package: str) -> list[tuple[str, Path]]:
+    """Where `package`'s checkout may be, most specific first, as (source, path)."""
+    found: list[tuple[str, Path]] = []
+    link = explicit_links(project).get(package)
+    if link is not None:
+        found.append((LOCAL_CONFIG_NAME, link))
+    for name in env_names(package):
+        if os.environ.get(name):
+            found.append((name, Path(os.environ[name]).expanduser()))
+    if os.environ.get("GTH_ROOT"):
+        found.append(("GTH_ROOT", Path(os.environ["GTH_ROOT"]).expanduser() / package))
+    found.append((SIBLING, main_checkout(project).parent / package))
+    return found
+
+
+def resolve(project: Path, package: str) -> Path | None:
+    """The first existing candidate, warning about an explicit one that is missing."""
+    for source, path in candidates(project, package):
+        if path.is_dir():
+            return path
+        if source != SIBLING:  # the default place missing is the ordinary "no checkout" case
+            print(f"warning: {package}: {source} points at {path}, which doesn't exist")
+    return None
+
+
 def same_path(a: Path, b: Path) -> bool:
     return os.path.normcase(a.resolve()) == os.path.normcase(b.resolve())
 
@@ -141,11 +208,12 @@ def pip(*args: str) -> None:
 def enable(project: Path, requirements: list[Requirement]) -> int:
     linked = []
     for requirement in requirements:
-        sibling = project.parent / requirement.name
-        if sibling.is_dir():
+        sibling = resolve(project, requirement.name)
+        if sibling is not None:
             linked.append((requirement, sibling))
         else:
-            print(f"warning: {requirement.name}: no checkout at {sibling}; keeping the release")
+            expected = main_checkout(project).parent / requirement.name
+            print(f"warning: {requirement.name}: no checkout at {expected}; keeping the release")
     if not linked:
         return 0
     pip("--no-deps", *[arg for _, sibling in linked for arg in ("-e", str(sibling))])
